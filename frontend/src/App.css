@@ -40,3 +40,176 @@
 .read-the-docs {
   color: #888;
 }
+
+.view-switcher {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+  background-color: #e5e5ea;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.view-switcher button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background-color: transparent;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.view-switcher button.active {
+  background-color: #ffffff;
+  color: #007aff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.order-display .waiting-text {
+  text-align: center;
+  color: #8e8e93;
+  padding: 40px 0;
+}
+
+.order-card {
+  background-color: #f0f8ff;
+  border: 1px solid #bde0fe;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.order-card h3 {
+  margin: 0 0 12px 0;
+  color: #005ecb;
+}
+
+.order-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.order-card li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.order-card li:last-child {
+  border-bottom: none;
+}
+
+/* Keep all your existing CSS and add these new styles at the end */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  color: #6c6c70;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.status-indicator.connected {
+  background-color: #34c759; /* Green */
+}
+
+.status-indicator.disconnected {
+  background-color: #ff3b30; /* Red */
+}
+
+.confirmation-message {
+  text-align: center;
+  padding: 10px;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.order-card.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.order-quantity {
+  font-weight: 600;
+  color: #007aff;
+}
+
+/* Add these new styles to the end of your App.css file */
+
+.acknowledge-button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+  border: none;
+  background-color: #34c759; /* Green */
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.acknowledge-button:hover {
+  background-color: #2e9a49;
+}
+
+.status-card {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid;
+}
+
+.status-card.pending {
+  background-color: #fffbe6;
+  border-color: #ffe58f;
+}
+
+.status-card.acknowledged {
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.status-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+}
+
+.status-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.status-card li {
+  padding: 2px 0;
+}
