@@ -1,6 +1,8 @@
 // frontend/src/ConnectPage.jsx
 import React, { useState, useContext } from 'react';
 import { AuthContext } from './context/AuthContext';
+// Import our centralized apiRequest helper
+import apiRequest from './services/api';
 import './ConnectPage.css';
 
 function ConnectPage() {
@@ -16,11 +18,8 @@ function ConnectPage() {
     setSearchResult(null);
     setRequestStatus('');
     try {
-      const response = await fetch(`http://localhost:3001/api/users/search?email=${searchEmail}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to search');
+      // --- DEFINITIVE FIX: Use the apiRequest helper ---
+      const data = await apiRequest(`/api/users/search?email=${searchEmail}`, { token });
       if (data) {
         setSearchResult(data);
       } else {
@@ -33,18 +32,14 @@ function ConnectPage() {
 
   const handleSendRequest = async (targetUserId) => {
     try {
-      const response = await fetch('http://localhost:3001/api/connect/request', {
+      // --- DEFINITIVE FIX: Use the apiRequest helper ---
+      await apiRequest('/api/connect/request', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ targetUserId })
+        token,
+        body: { targetUserId }
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to send request');
       setRequestStatus('Connection request sent!');
-      setSearchResult(null); // Clear search result after sending
+      setSearchResult(null);
     } catch (err) {
       setRequestStatus(err.message);
     }
@@ -52,17 +47,13 @@ function ConnectPage() {
   
   const handleAcceptRequest = async (requesterId) => {
     try {
-      const response = await fetch('http://localhost:3001/api/connect/accept', {
+      // --- DEFINITIVE FIX: Use the apiRequest helper ---
+      await apiRequest('/api/connect/accept', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ requesterId })
+        token,
+        body: { requesterId }
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to accept request');
-      // Refresh user data to get the new partner info
+      // Refresh user data to get the new partner info and trigger a re-render
       refreshUserData();
     } catch (err) {
       alert(err.message);
@@ -77,7 +68,6 @@ function ConnectPage() {
           <p>You need to link with your partner to start sending requests.</p>
         </header>
 
-        {/* --- Pending Requests Section --- */}
         {user?.pendingRequests && user.pendingRequests.length > 0 && (
           <div className="card pending-requests-card">
             <h3>Incoming Requests</h3>
@@ -90,7 +80,6 @@ function ConnectPage() {
           </div>
         )}
 
-        {/* --- Search Section --- */}
         <div className="card search-card">
           <h3>Find your Partner by Email</h3>
           <form onSubmit={handleSearch}>
