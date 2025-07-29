@@ -1,15 +1,18 @@
 // frontend/src/App.jsx
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import io from 'socket.io-client';
+import { AuthContext } from './context/AuthContext';
 import { MENU_ITEMS } from './menuItems';
-import HomePage from './HomePage'; // Import the new Home Page
+import HomePage from './HomePage';
+import AuthPage from './AuthPage';
 import './App.css';
 
 const socket = io('http://localhost:3001');
 
-// --- Main Application Component (The Core App) ---
-function MainApp() {
-  const [view, setView] = useState('sender');
+// --- Main Application Component (The Core App for logged-in users) ---
+function MainApp({ user, onLogout }) {
+  // The view is now determined by the user's role, not a button
+  const view = user.role;
   const [isConnected, setIsConnected] = useState(socket.connected);
 
   useEffect(() => {
@@ -25,51 +28,55 @@ function MainApp() {
 
   return (
     <div className="app-container">
-      <div className="status-bar">
-        <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}></div>
-        <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
+      <div className="app-header-main">
+        <div className="status-bar">
+          <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}></div>
+          <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
+        </div>
+        {/* --- NEW: Logout Button --- */}
+        <button onClick={onLogout} className="logout-button">Logout</button>
       </div>
-      <div className="view-switcher">
-        <button onClick={() => setView('sender')} className={view === 'sender' ? 'active' : ''}>Dad's View</button>
-        <button onClick={() => setView('receiver')} className={view === 'receiver' ? 'active' : ''}>Mom's View</button>
-      </div>
+      
+      {/* Conditionally render the correct view based on the user's role */}
       {view === 'sender' ? <SenderView /> : <ReceiverView />}
     </div>
   );
 }
 
-
-// --- The App Component now acts as a ROUTER ---
+// --- The App Component now acts as the master ROUTER ---
 function App() {
-  // 'home', 'login', 'app'
+  const { isLoggedIn, user, logout } = useContext(AuthContext);
   const [currentPage, setCurrentPage] = useState('home');
 
-  // For now, we will simulate login
-  // In the next step, this will be replaced with real auth logic
-  const handleLogin = () => {
-    console.log("Simulating login...");
-    setCurrentPage('app');
-  }
+  // This effect will run when the login state changes,
+  // automatically showing the correct page.
+  useEffect(() => {
+    if (isLoggedIn) {
+      setCurrentPage('app');
+    } else {
+      setCurrentPage('home');
+    }
+  }, [isLoggedIn]);
 
-  // Render different components based on the current page state
-  switch (currentPage) {
-    case 'app':
-      return <MainApp />;
-    case 'login':
-      // We will build this view next. For now, it's a placeholder.
-      return (
-        <div className="app-container">
-          <h1>Login/Register Page</h1>
-          <p>Coming soon...</p>
-          <button onClick={handleLogin}>Click to Simulate Login</button>
-        </div>
-      );
-    case 'home':
-    default:
-      // Pass a function to HomePage so it can change the page
-      return <HomePage onNavigate={setCurrentPage} />;
-  }
+  const renderPage = () => {
+    // If the user is logged in, show the main application.
+    if (isLoggedIn) {
+      return <MainApp user={user} onLogout={logout} />;
+    }
+
+    // If they are not logged in, show either the home or login page.
+    switch (currentPage) {
+      case 'login':
+        return <AuthPage />;
+      case 'home':
+      default:
+        return <HomePage onNavigate={setCurrentPage} />;
+    }
+  };
+
+  return <div className="app-wrapper">{renderPage()}</div>;
 }
+
 
 // --- Sender & Receiver components remain unchanged below ---
 

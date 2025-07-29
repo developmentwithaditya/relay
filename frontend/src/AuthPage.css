@@ -1,0 +1,109 @@
+/* frontend/src/AuthPage.css */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  padding: 20px;
+}
+
+.auth-form-wrapper {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form-wrapper h2 {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #1c1c1e;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #3c3c43;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #c7c7cc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.role-selector {
+  display: flex;
+  border: 1px solid #c7c7cc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.role-selector button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background-color: #f8f8f8;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.role-selector button.active {
+  background-color: #007aff;
+  color: white;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  background-color: #007aff;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.auth-button:hover {
+  background-color: #005ecb;
+}
+
+.toggle-view {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9rem;
+}
+
+.toggle-view button {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-weight: 600;
+  cursor: pointer;
+  padding-left: 5px;
+}
+
+.error-message {
+  color: #ff3b30;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.success-message {
+  color: #34c759;
+  text-align: center;
+  margin-bottom: 15px;
+}

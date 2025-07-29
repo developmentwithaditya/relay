@@ -477,3 +477,31 @@ body {
     font-size: 2.8rem; /* Larger title */
   }
 }
+
+/* Add these new styles to the end of your App.css file */
+
+.app-wrapper {
+  width: 100%;
+}
+
+.app-header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.logout-button {
+  background-color: #e5e5ea;
+  color: #3c3c43;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.logout-button:hover {
+  background-color: #d1d1d6;
+}
