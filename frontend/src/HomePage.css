@@ -1,0 +1,89 @@
+/* frontend/src/HomePage.css */
+.homepage-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+  width: 100%;
+  max-width: 600px;
+  margin: auto;
+}
+
+.homepage-header {
+  margin-bottom: 40px;
+}
+
+.homepage-logo {
+  font-size: 3.5rem;
+}
+
+.homepage-header h1 {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #1c1c1e;
+  margin: 10px 0;
+}
+
+.homepage-header p {
+  font-size: 1.2rem;
+  color: #6c6c70;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.homepage-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 40px;
+}
+
+.feature-box {
+  background-color: #f8f8f8;
+  border: 1px solid #e5e5ea;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.feature-box h3 {
+  margin: 0 0 8px 0;
+  color: #007aff;
+}
+
+.feature-box p {
+  margin: 0;
+  color: #3c3c43;
+  line-height: 1.5;
+}
+
+.homepage-footer p {
+  font-size: 1rem;
+  color: #6c6c70;
+}
+
+.cta-button {
+  width: 100%;
+  max-width: 300px;
+  padding: 16px;
+  margin-top: 12px;
+  border: none;
+  background-color: #007aff;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cta-button:hover {
+  background-color: #005ecb;
+}
+
+@media (min-width: 768px) {
+  .homepage-main {
+    flex-direction: row;
+  }
+}

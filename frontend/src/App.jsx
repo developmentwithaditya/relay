@@ -2,59 +2,106 @@
 import { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import { MENU_ITEMS } from './menuItems';
+import HomePage from './HomePage'; // Import the new Home Page
 import './App.css';
 
 const socket = io('http://localhost:3001');
 
-// --- Sender Component (Dad's View) ---
+// --- Main Application Component (The Core App) ---
+function MainApp() {
+  const [view, setView] = useState('sender');
+  const [isConnected, setIsConnected] = useState(socket.connected);
+
+  useEffect(() => {
+    function onConnect() { setIsConnected(true); }
+    function onDisconnect() { setIsConnected(false); }
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+    };
+  }, []);
+
+  return (
+    <div className="app-container">
+      <div className="status-bar">
+        <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}></div>
+        <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
+      </div>
+      <div className="view-switcher">
+        <button onClick={() => setView('sender')} className={view === 'sender' ? 'active' : ''}>Dad's View</button>
+        <button onClick={() => setView('receiver')} className={view === 'receiver' ? 'active' : ''}>Mom's View</button>
+      </div>
+      {view === 'sender' ? <SenderView /> : <ReceiverView />}
+    </div>
+  );
+}
+
+
+// --- The App Component now acts as a ROUTER ---
+function App() {
+  // 'home', 'login', 'app'
+  const [currentPage, setCurrentPage] = useState('home');
+
+  // For now, we will simulate login
+  // In the next step, this will be replaced with real auth logic
+  const handleLogin = () => {
+    console.log("Simulating login...");
+    setCurrentPage('app');
+  }
+
+  // Render different components based on the current page state
+  switch (currentPage) {
+    case 'app':
+      return <MainApp />;
+    case 'login':
+      // We will build this view next. For now, it's a placeholder.
+      return (
+        <div className="app-container">
+          <h1>Login/Register Page</h1>
+          <p>Coming soon...</p>
+          <button onClick={handleLogin}>Click to Simulate Login</button>
+        </div>
+      );
+    case 'home':
+    default:
+      // Pass a function to HomePage so it can change the page
+      return <HomePage onNavigate={setCurrentPage} />;
+  }
+}
+
+// --- Sender & Receiver components remain unchanged below ---
+
 function SenderView() {
   const [order, setOrder] = useState({});
   const [sentOrders, setSentOrders] = useState([]);
-
   useEffect(() => {
-    // --- FIX: Listen for the new confirmation event ---
     const handleOrderSentSuccessfully = ({ tempId, newDbId }) => {
-      // Update the temporary order with the real ID from the database
-      setSentOrders(prevOrders =>
-        prevOrders.map(o => (o._id === tempId ? { ...o, _id: newDbId } : o))
-      );
+      setSentOrders(prevOrders => prevOrders.map(o => (o._id === tempId ? { ...o, _id: newDbId } : o)));
     };
-
     const handleOrderAcknowledged = (acknowledgedOrderId) => {
-      setSentOrders(prevOrders =>
-        prevOrders.map(o =>
-          o._id === acknowledgedOrderId ? { ...o, status: 'acknowledged' } : o
-        )
-      );
-      setTimeout(() => {
-        setSentOrders(prevOrders => prevOrders.filter(o => o._id !== acknowledgedOrderId));
-      }, 4000);
+      setSentOrders(prevOrders => prevOrders.map(o => o._id === acknowledgedOrderId ? { ...o, status: 'acknowledged' } : o));
+      setTimeout(() => { setSentOrders(prevOrders => prevOrders.filter(o => o._id !== acknowledgedOrderId)); }, 4000);
     };
-
     socket.on('order_sent_successfully', handleOrderSentSuccessfully);
     socket.on('order_acknowledged', handleOrderAcknowledged);
-
     return () => {
       socket.off('order_sent_successfully', handleOrderSentSuccessfully);
       socket.off('order_acknowledged', handleOrderAcknowledged);
     };
   }, []);
-
   const sendOrder = () => {
     const itemsToSend = Object.entries(order).filter(([, qty]) => qty > 0).reduce((acc, [id, qty]) => ({ ...acc, [id]: qty }), {});
     if (Object.keys(itemsToSend).length > 0) {
-      const tempId = `temp_${Date.now()}`; // Create a unique temporary ID
+      const tempId = `temp_${Date.now()}`;
       const tempOrder = { _id: tempId, items: itemsToSend, status: 'pending' };
       setSentOrders(prev => [...prev, tempOrder]);
-      
-      // MODIFIED: Send the items and the temporary ID
       socket.emit('send_order', { items: itemsToSend, tempId: tempId });
       setOrder({});
     }
   };
-
   const getOrderItemName = (itemId) => MENU_ITEMS.find(i => i.id == itemId)?.name || 'Unknown';
-
   return (
     <>
       <header className="app-header"><h1>Send Request</h1><p>Select items for the guests</p></header>
@@ -79,7 +126,6 @@ function SenderView() {
   );
 }
 
-// --- Receiver Component (No changes needed) ---
 function ReceiverView() {
   const [activeOrder, setActiveOrder] = useState(null);
   useEffect(() => {
@@ -118,34 +164,4 @@ function ReceiverView() {
   );
 }
 
-// --- Main App Component (No changes needed) ---
-function App() {
-  const [view, setView] = useState('sender');
-  const [isConnected, setIsConnected] = useState(socket.connected);
-  useEffect(() => {
-    function onConnect() { setIsConnected(true); }
-    function onDisconnect() { setIsConnected(false); }
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-    return () => {
-      socket.off('connect', onConnect);
-      socket.off('disconnect', onDisconnect);
-    };
-  }, []);
-  return (
-    <div className="app-container">
-      <div className="status-bar">
-        <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}></div>
-        <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
-      </div>
-      <div className="view-switcher">
-        <button onClick={() => setView('sender')} className={view === 'sender' ? 'active' : ''}>Dad's View</button>
-        <button onClick={() => setView('receiver')} className={view === 'receiver' ? 'active' : ''}>Mom's View</button>
-      </div>
-      {view === 'sender' ? <SenderView /> : <ReceiverView />}
-    </div>
-  );
-}
-
 export default App;
-  
