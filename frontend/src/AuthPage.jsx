@@ -1,6 +1,8 @@
 // frontend/src/AuthPage.jsx
 import React, { useState, useContext } from 'react';
 import { AuthContext } from './context/AuthContext';
+// Import our centralized apiRequest helper
+import apiRequest from './services/api';
 import './AuthPage.css';
 
 function AuthPage() {
@@ -11,7 +13,6 @@ function AuthPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  // Get the login function from our AuthContext
   const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
@@ -19,28 +20,20 @@ function AuthPage() {
     setError('');
     setMessage('');
 
-    const url = isLoginView ? '/api/login' : '/api/register';
-    const payload = isLoginView ? { email, password } : { email, password, role };
+    const endpoint = isLoginView ? '/api/login' : '/api/register';
+    const body = isLoginView ? { email, password } : { email, password, role };
 
     try {
-      const response = await fetch(`http://localhost:3001${url}`, {
+      // --- DEFINITIVE FIX: Use the apiRequest helper ---
+      // This ensures all API calls go to the correct live backend URL.
+      const data = await apiRequest(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: body,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'An error occurred.');
-      }
-
       if (isLoginView) {
-        // On successful login, call the context's login function.
-        // This will update the global state and trigger the redirect in App.jsx
         login(data.user, data.token);
       } else {
-        // On successful registration, show a message and switch to the login form
         setMessage('Registration successful! Please log in.');
         setIsLoginView(true);
       }

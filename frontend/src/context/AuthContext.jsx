@@ -1,5 +1,7 @@
 // frontend/src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useCallback } from 'react';
+// Import our centralized apiRequest helper
+import apiRequest from '../services/api';
 
 export const AuthContext = createContext(null);
 
@@ -10,11 +12,8 @@ export function AuthProvider({ children }) {
 
   const fetchUserData = useCallback(async (authToken) => {
     try {
-      const response = await fetch('http://localhost:3001/api/me', {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch user data');
-      const userData = await response.json();
+      // --- DEFINITIVE FIX: Use the apiRequest helper ---
+      const userData = await apiRequest('/api/me', { token: authToken });
       setUser(userData);
     } catch (e) {
       console.error("Auth fetch error:", e);
@@ -36,7 +35,6 @@ export function AuthProvider({ children }) {
 
   const login = (loginData, userToken) => {
     localStorage.setItem('token', userToken);
-    // --- FIX: Standardize the user object to always use _id ---
     const standardizedUser = { ...loginData, _id: loginData.id };
     setUser(standardizedUser);
     setToken(userToken);
