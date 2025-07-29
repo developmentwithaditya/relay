@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true, // Each email must be unique
+    unique: true,
     trim: true,
     lowercase: true,
   },
@@ -16,10 +16,20 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['sender', 'receiver'], // Role must be one of these two values
+    enum: ['sender', 'receiver'],
   },
-  // We will add the connection to the partner later
-  // partnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+  // --- NEW FIELDS ---
+  // Stores the ID of the connected partner
+  partnerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // This links to another document in the User collection
+    default: null,
+  },
+  // Stores the IDs of users who have sent a connection request
+  pendingRequests: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
 });
 
 const User = mongoose.model('User', userSchema);

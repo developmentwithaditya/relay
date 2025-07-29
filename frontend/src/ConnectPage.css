@@ -1,0 +1,119 @@
+/* frontend/src/ConnectPage.css */
+.connect-page-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  padding: 20px;
+}
+
+.connect-wrapper {
+  width: 100%;
+  max-width: 500px;
+}
+
+.connect-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.connect-header h1 {
+  font-size: 2rem;
+  color: #1c1c1e;
+}
+
+.connect-header p {
+  color: #6c6c70;
+  font-size: 1.1rem;
+}
+
+.card {
+  background: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+}
+
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e5e5ea;
+  padding-bottom: 10px;
+}
+
+/* Pending Requests Card */
+.request-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+.accept-btn {
+  background-color: #34c759;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Search Card */
+.search-card form {
+  display: flex;
+  gap: 10px;
+}
+
+.search-card input {
+  flex-grow: 1;
+  padding: 12px;
+  border: 1px solid #c7c7cc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.search-card button {
+  background-color: #007aff;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.error-text {
+  color: #ff3b30;
+  margin-top: 15px;
+}
+.success-text {
+  color: #34c759;
+  margin-top: 15px;
+}
+
+.search-result {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-result p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.connect-btn {
+  background-color: #5856d6; /* A nice purple */
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}

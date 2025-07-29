@@ -1,39 +1,45 @@
 // frontend/src/context/AuthContext.jsx
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 
-// Create the context
 export const AuthContext = createContext(null);
 
-// Create the provider component
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token')); // Get token from browser storage
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [authReady, setAuthReady] = useState(false);
+
+  const fetchUserData = useCallback(async (authToken) => {
+    try {
+      const response = await fetch('http://localhost:3001/api/me', {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      if (!response.ok) throw new Error('Failed to fetch user data');
+      const userData = await response.json();
+      setUser(userData);
+    } catch (e) {
+      console.error("Auth fetch error:", e);
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+    } finally {
+      setAuthReady(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (token) {
-      // If we have a token, we should verify it with the backend to get user data
-      // For now, we'll decode it. In a real app, you'd make an API call.
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.exp * 1000 > Date.now()) {
-          setUser({ id: payload.userId, role: payload.role });
-        } else {
-          // Token expired
-          localStorage.removeItem('token');
-          setToken(null);
-        }
-      } catch (e) {
-        console.error("Invalid token:", e);
-        localStorage.removeItem('token');
-        setToken(null);
-      }
+      fetchUserData(token);
+    } else {
+      setAuthReady(true);
     }
-  }, [token]);
+  }, [token, fetchUserData]);
 
-  const login = (userData, userToken) => {
+  const login = (loginData, userToken) => {
     localStorage.setItem('token', userToken);
+    // --- FIX: Standardize the user object to always use _id ---
+    const standardizedUser = { ...loginData, _id: loginData.id };
+    setUser(standardizedUser);
     setToken(userToken);
-    setUser({ id: userData.id, role: userData.role, email: userData.email });
   };
 
   const logout = () => {
@@ -42,13 +48,16 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  // The value provided to consuming components
   const value = {
     user,
     token,
     isLoggedIn: !!user,
+    authReady,
     login,
     logout,
+    refreshUserData: () => {
+      if(token) fetchUserData(token);
+    },
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,16 +1,17 @@
 // frontend/src/AuthPage.jsx
 import React, { useState, useContext } from 'react';
 import { AuthContext } from './context/AuthContext';
-import './AuthPage.css'; // We will create this file next
+import './AuthPage.css';
 
 function AuthPage() {
   const [isLoginView, setIsLoginView] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('sender'); // Default role for registration
+  const [role, setRole] = useState('sender');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
+  // Get the login function from our AuthContext
   const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
@@ -31,16 +32,17 @@ function AuthPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
+        throw new Error(data.message || 'An error occurred.');
       }
 
       if (isLoginView) {
-        // If login is successful, call the login function from AuthContext
+        // On successful login, call the context's login function.
+        // This will update the global state and trigger the redirect in App.jsx
         login(data.user, data.token);
       } else {
-        // If registration is successful, show a message
+        // On successful registration, show a message and switch to the login form
         setMessage('Registration successful! Please log in.');
-        setIsLoginView(true); // Switch to login view
+        setIsLoginView(true);
       }
     } catch (err) {
       setError(err.message);
@@ -60,6 +62,7 @@ function AuthPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
           </div>
           <div className="input-group">
@@ -70,6 +73,7 @@ function AuthPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete={isLoginView ? "current-password" : "new-password"}
             />
           </div>
           {!isLoginView && (
@@ -101,7 +105,7 @@ function AuthPage() {
         </form>
         <p className="toggle-view">
           {isLoginView ? "Don't have an account?" : 'Already have an account?'}
-          <button onClick={() => setIsLoginView(!isLoginView)}>
+          <button onClick={() => { setIsLoginView(!isLoginView); setError(''); setMessage(''); }}>
             {isLoginView ? 'Register' : 'Login'}
           </button>
         </p>
