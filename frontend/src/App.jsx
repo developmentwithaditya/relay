@@ -64,6 +64,8 @@ function SenderView() {
     }, {});
   }, [user?.presets]);
 
+ // *** BUG FIX: Added `user` to dependency array ***
+  // This ensures listeners are correctly set up for the logged-in user.
   useEffect(() => {
     const handleOrderSaved = ({ tempId, dbId }) => setSentOrders(p => p.map(o => (o.tempId === tempId ? { ...o, _id: dbId, status: 'pending' } : o)));
     const handleOrderAcknowledged = (id) => {
@@ -74,15 +76,17 @@ function SenderView() {
       setSentOrders(p => p.map(o => (o._id === id ? { ...o, status: 'rejected' } : o)));
       setTimeout(() => setSentOrders(p => p.filter(o => o._id !== id)), 8000);
     };
+    
     socket.on('order_saved', handleOrderSaved);
     socket.on('order_acknowledged', handleOrderAcknowledged);
     socket.on('order_rejected', handleOrderRejected);
+    
     return () => {
       socket.off('order_saved', handleOrderSaved);
       socket.off('order_acknowledged', handleOrderAcknowledged);
       socket.off('order_rejected', handleOrderRejected);
     };
-  }, []);
+  }, [user]); // Dependency on user ensures this runs on login
 
   // --- MODIFIED: sendOrder now handles both custom and preset orders ---
   const sendOrder = (items) => {
