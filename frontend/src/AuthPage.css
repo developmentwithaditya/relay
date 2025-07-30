@@ -107,3 +107,20 @@
   text-align: center;
   margin-bottom: 15px;
 }
+/* Add these styles to the end of AuthPage.css */
+
+.profile-preview {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-top: 15px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  border: 3px solid #e5e5ea;
+}
+
+#profilePicture {
+    font-size: 0.9rem;
+}

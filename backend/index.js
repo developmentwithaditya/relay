@@ -9,6 +9,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from './models/User.js';
 import Order from './models/Order.js';
+// Import the Cloudinary parser we created
 import { parser } from './config/cloudinary.js';
 
 dotenv.config();
@@ -16,15 +17,13 @@ const app = express();
 app.use(cors());
 const server = http.createServer(app);
 
-// --- DEFINITIVE FIX for WebSocket connection issues on Render ---
 const io = new Server(server, { 
   cors: { 
     origin: "*", 
     methods: ["GET", "POST"] 
   },
-  // These settings send keep-alive pings to prevent timeouts
-  pingTimeout: 60000, // 60 seconds
-  pingInterval: 25000 // 25 seconds
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 const PORT = process.env.PORT || 3001;
@@ -45,9 +44,13 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
+// --- MODIFIED: Register Route ---
+// The route now uses 'parser.single("profilePicture")' to handle the optional file upload.
+// This middleware must come before the main route logic.
 app.post('/api/register', parser.single('profilePicture'), async (req, res) => {
   try {
     const { email, password, role, displayName } = req.body;
+
     if (!email || !password || !role || !displayName) {
       return res.status(400).json({ message: 'Please provide all required fields.' });
     }
@@ -57,14 +60,17 @@ app.post('/api/register', parser.single('profilePicture'), async (req, res) => {
     }
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+    
     const newUser = new User({
       email,
       password: hashedPassword,
       role,
       displayName,
+      // If a file was uploaded by the parser, req.file will exist. We save its URL.
       profilePictureUrl: req.file ? req.file.path : '' 
     });
     await newUser.save();
+    
     res.status(201).json({ message: 'User registered successfully!' });
   } catch (error) {
     console.error("Registration Error:", error);
@@ -72,11 +78,15 @@ app.post('/api/register', parser.single('profilePicture'), async (req, res) => {
   }
 });
 
+// We add express.json() here to apply it to all subsequent routes that expect a JSON body
 app.use(express.json());
 
+// --- MODIFIED: Routes now populate and return new profile fields ---
 app.post('/api/login', async (req, res) => { try { const { email, password } = req.body; const user = await User.findOne({ email }); if (!user) { return res.status(400).json({ message: 'Invalid credentials.' }); } const isMatch = await bcrypt.compare(password, user.password); if (!isMatch) { return res.status(400).json({ message: 'Invalid credentials.' }); } const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' }); res.status(200).json({ token, user: { id: user._id, email: user.email, role: user.role, displayName: user.displayName, profilePictureUrl: user.profilePictureUrl }, }); } catch (error) { res.status(500).json({ message: 'Server error during login.', error }); } });
 app.get('/api/me', authMiddleware, async (req, res) => { try { const user = await User.findById(req.user.userId).select('-password').populate('partnerId', 'email role displayName profilePictureUrl').populate('pendingRequests', 'email role displayName profilePictureUrl'); res.json(user); } catch (error) { res.status(500).json({ message: 'Error fetching user profile.' }); } });
 app.get('/api/users/search', authMiddleware, async (req, res) => { try { const { email } = req.query; if (!email) { return res.status(400).json({ message: 'Email query is required.' }); } const potentialPartner = await User.findOne({ email, _id: { $ne: req.user.userId } }).select('email role displayName profilePictureUrl'); res.json(potentialPartner); } catch (error) { res.status(500).json({ message: 'Error searching for user.' }); } });
+
+// --- Unchanged Routes and Socket Logic ---
 app.post('/api/connect/request', authMiddleware, async (req, res) => { try { const { targetUserId } = req.body; await User.findByIdAndUpdate(targetUserId, { $addToSet: { pendingRequests: req.user.userId } }); res.json({ message: 'Connection request sent.' }); } catch (error) { res.status(500).json({ message: 'Error sending request.' }); } });
 app.post('/api/connect/accept', authMiddleware, async (req, res) => { try { const { requesterId } = req.body; const currentUserId = req.user.userId; await User.findByIdAndUpdate(currentUserId, { partnerId: requesterId, $pull: { pendingRequests: requesterId } }); await User.findByIdAndUpdate(requesterId, { partnerId: currentUserId }); res.json({ message: 'Connection successful!' }); } catch (error) { res.status(500).json({ message: 'Error accepting request.' }); } });
 app.get('/api/pending-orders', authMiddleware, async (req, res) => { try { const pendingOrder = await Order.findOne({ receiverId: req.user.userId, status: 'pending' }).sort({ createdAt: -1 }); res.json(pendingOrder); } catch (error) { res.status(500).json({ message: 'Error fetching pending orders' }); } });
