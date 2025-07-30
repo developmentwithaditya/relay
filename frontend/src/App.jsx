@@ -1,7 +1,7 @@
 // frontend/src/App.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from './context/AuthContext';
-import { socket } from './services/api';
+import { socket, apiRequest } from './services/api';
 import { MENU_ITEMS } from './menuItems';
 import HomePage from './HomePage';
 import AuthPage from './AuthPage';
