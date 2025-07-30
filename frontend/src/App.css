@@ -232,3 +232,48 @@ body {
     font-size: 2.8rem;
   }
 }
+/* Add these new styles to the end of your App.css file */
+
+/* For the Receiver's card */
+.order-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.order-actions .acknowledge-button,
+.order-actions .reject-button {
+  margin-top: 0;
+  flex: 1; /* Make buttons share space equally */
+}
+
+.reject-button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background-color: #ff3b30; /* Red for reject */
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.reject-button:hover {
+  background-color: #c70000;
+}
+
+
+/* For the Sender's status card */
+.status-card.rejected {
+  background-color: #ffebee; /* Light red */
+  border-color: #ffcdd2;
+  text-align: center;
+}
+
+.status-card.rejected h4 {
+  color: #c62828; /* Darker red */
+  font-weight: 600;
+  margin: 0;
+}

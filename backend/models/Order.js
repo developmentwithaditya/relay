@@ -3,9 +3,13 @@ import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
   items: { type: Object, required: true },
-  status: { type: String, enum: ['pending', 'acknowledged'], default: 'pending' },
+  // --- NEW: Added 'rejected' to the possible statuses ---
+  status: { 
+    type: String, 
+    enum: ['pending', 'acknowledged', 'rejected'], 
+    default: 'pending' 
+  },
   createdAt: { type: Date, default: Date.now },
-  // --- FIX: These fields are now correctly included in the schema ---
   senderId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 

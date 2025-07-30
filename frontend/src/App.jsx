@@ -81,7 +81,7 @@ function App() {
 }
 
 
-// --- SenderView and ReceiverView (Unchanged) ---
+// --- SenderView (Modified to handle rejections) ---
 function SenderView() {
   const { user } = useContext(AuthContext);
   const [order, setOrder] = useState({});
@@ -101,11 +101,26 @@ function SenderView() {
         setSentOrders(prev => prev.filter(o => o._id !== acknowledgedOrderId));
       }, 3000);
     };
+    
+    // --- NEW: Listen for the 'order_rejected' event ---
+    const handleOrderRejected = (rejectedOrderId) => {
+        setSentOrders(prev =>
+            prev.map(o => (o._id === rejectedOrderId ? { ...o, status: 'rejected' } : o))
+        );
+        // Optional: Remove the rejected card after a longer period
+        setTimeout(() => {
+            setSentOrders(prev => prev.filter(o => o._id !== rejectedOrderId));
+        }, 8000); // Remove after 8 seconds
+    };
+
     socket.on('order_saved', handleOrderSaved);
     socket.on('order_acknowledged', handleOrderAcknowledged);
+    socket.on('order_rejected', handleOrderRejected); // Add the new listener
+
     return () => {
       socket.off('order_saved', handleOrderSaved);
       socket.off('order_acknowledged', handleOrderAcknowledged);
+      socket.off('order_rejected', handleOrderRejected); // Clean up the listener
     };
   }, []);
 
@@ -124,15 +139,20 @@ function SenderView() {
   
   return (
     <>
-      <header className="app-header"><h1>Send Request</h1><p>Send to: {user.partnerId?.displayName || '...'}</p></header>
+     <header className="app-header"><h1>Send Request</h1><p>Send to: {user.partnerId?.displayName || '...'}</p></header>
       <div className="status-card-container">{sentOrders.map(ord => (
-          <div key={ord.tempId} className={`status-card ${ord.status}`}>
+          <div key={ord.tempId || ord._id} className={`status-card ${ord.status}`}>
             <h4>
               {ord.status === 'sending' && 'Sending...'}
               {ord.status === 'pending' && 'Sent!'}
               {ord.status === 'acknowledged' && 'Seen ✅'}
+              {/* --- NEW: Display for rejected status --- */}
+              {ord.status === 'rejected' && `Rejected by ${user.partnerId?.displayName || 'Receiver'} ❌`}
             </h4>
-            <ul>{Object.entries(ord.items).map(([id, qty]) => <li key={id}>{getOrderItemName(id)} (x{qty})</li>)}</ul>
+            {/* Only show order items if not rejected */}
+            {ord.status !== 'rejected' && (
+                <ul>{Object.entries(ord.items).map(([id, qty]) => <li key={id}>{getOrderItemName(id)} (x{qty})</li>)}</ul>
+            )}
           </div>))}
       </div>
       <div className="menu-container">{MENU_ITEMS.map(item => (
@@ -177,6 +197,14 @@ function ReceiverView() {
     }
   };
   
+  // --- NEW: Function to handle rejecting an order ---
+  const handleReject = () => {
+    if (activeOrder && user?._id) {
+        socket.emit('reject_order', { orderId: activeOrder._id, receiverId: user._id });
+        setActiveOrder(null);
+    }
+  };
+
   const getOrderItemName = (itemId) => MENU_ITEMS.find(i => i.id == itemId)?.name || 'Unknown';
   
   return (
@@ -188,7 +216,11 @@ function ReceiverView() {
             <ul>{Object.entries(activeOrder.items).map(([itemId, quantity]) => (
                 <li key={itemId}><span>{getOrderItemName(itemId)}</span><span className="order-quantity">x {quantity}</span></li>
               ))}</ul>
-            <button className="acknowledge-button" onClick={handleAcknowledge}>Acknowledge & Clear</button>
+            {/* --- NEW: Button container and Reject button --- */}
+            <div className="order-actions">
+                <button className="reject-button" onClick={handleReject}>Reject</button>
+                <button className="acknowledge-button" onClick={handleAcknowledge}>Acknowledge</button>
+            </div>
           </div>) : (<p className="waiting-text">Waiting for new orders...</p>)}
       </div>
     </>
