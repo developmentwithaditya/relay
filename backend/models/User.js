@@ -18,14 +18,24 @@ const userSchema = new mongoose.Schema({
     required: true,
     enum: ['sender', 'receiver'],
   },
-  // --- NEW FIELDS ---
-  // Stores the ID of the connected partner
+  
+  // --- NEW PROFILE FIELDS ---
+  displayName: {
+    type: String,
+    trim: true,
+    default: '', // Users will start with an empty display name
+  },
+  profilePictureUrl: {
+    type: String,
+    default: '', // Users will start with no profile picture
+  },
+  
+  // --- Existing Connection Fields ---
   partnerId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // This links to another document in the User collection
+    ref: 'User',
     default: null,
   },
-  // Stores the IDs of users who have sent a connection request
   pendingRequests: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
