@@ -1,0 +1,67 @@
+/* frontend/src/theme.css */
+
+/* Define CSS variables for light theme (default) */
+:root {
+  --font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  
+  --primary-bg: #ffffff;
+  --secondary-bg: #f9f9f9;
+  --card-bg: #ffffff;
+  --header-bg: #ffffff;
+  
+  --primary-text: #213547;
+  --secondary-text: #555555;
+  --link-color: #1a73e8;
+  
+  --border-color: #e0e0e0;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+
+  --button-bg: #f0f0f0;
+  --button-hover-bg: #e0e0e0;
+  --button-text: #333333;
+  
+  --primary-button-bg: #1a73e8;
+  --primary-button-hover-bg: #1662c4;
+  --primary-button-text: #ffffff;
+
+  --reject-button-bg: #fce8e6;
+  --reject-button-hover-bg: #f9d8d6;
+  --reject-button-text: #c5221f;
+  
+  --success-bg: #e6f4ea;
+  --success-text: #1e8e3e;
+  --error-bg: #fce8e6;
+  --error-text: #d93025;
+}
+
+/* Override variables for dark theme */
+body[data-theme='dark'] {
+  --primary-bg: #121212;
+  --secondary-bg: #1e1e1e;
+  --card-bg: #2a2a2a;
+  --header-bg: #1e1e1e;
+  
+  --primary-text: #e0e0e0;
+  --secondary-text: #b0b0b0;
+  --link-color: #8ab4f8;
+  
+  --border-color: #444444;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+
+  --button-bg: #3a3a3a;
+  --button-hover-bg: #4a4a4a;
+  --button-text: #e0e0e0;
+  
+  --primary-button-bg: #8ab4f8;
+  --primary-button-hover-bg: #9ac1fa;
+  --primary-button-text: #202124;
+
+  --reject-button-bg: #4d1f1c;
+  --reject-button-hover-bg: #5d2e2a;
+  --reject-button-text: #f28b82;
+
+  --success-bg: #1e3d2a;
+  --success-text: #81c995;
+  --error-bg: #4d1f1c;
+  --error-text: #f28b82;
+}

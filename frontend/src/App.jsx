@@ -1,16 +1,18 @@
 // frontend/src/App.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext'; // Import the useTheme hook
 import { socket } from './services/api';
 import { MENU_ITEMS } from './menuItems';
 import HomePage from './HomePage';
 import AuthPage from './AuthPage';
 import ConnectPage from './ConnectPage';
-import EditProfilePage from './EditProfilePage'; // Import the new page
+import EditProfilePage from './EditProfilePage';
 import './App.css';
 
 // --- MainApp Component (For connected users) ---
 function MainApp({ user, onLogout, onEditProfile }) {
+  const { theme, toggleTheme } = useTheme(); // Get theme state and toggle function
   const view = user.role;
   const [isConnected, setIsConnected] = useState(socket.connected);
 
@@ -40,6 +42,10 @@ function MainApp({ user, onLogout, onEditProfile }) {
           <span>{user.displayName}</span>
         </div>
         <div className="header-actions">
+          {/* THEME TOGGLE BUTTON */}
+          <button onClick={toggleTheme} className="theme-toggle-button" aria-label="Toggle theme">
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
           <button onClick={onEditProfile} className="edit-profile-button">Edit</button>
           <button onClick={onLogout} className="logout-button">Logout</button>
         </div>
@@ -53,26 +59,22 @@ function MainApp({ user, onLogout, onEditProfile }) {
 function App() {
   const { isLoggedIn, user, logout, authReady } = useContext(AuthContext);
   const [publicPage, setPublicPage] = useState('home');
-  const [isEditingProfile, setIsEditingProfile] = useState(false); // New state for routing
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
-  // If the initial auth check isn't done, show a loading screen
   if (!authReady) {
     return <div className="loading-fullscreen"><h1>Loading Relay...</h1></div>;
   }
 
-  // If the user is logged in and wants to edit their profile, show that page
   if (isLoggedIn && isEditingProfile) {
     return <EditProfilePage onBack={() => setIsEditingProfile(false)} />;
   }
 
-  // If the user is logged in, decide which main view to show
   if (isLoggedIn && user) {
     return user.partnerId 
       ? <MainApp user={user} onLogout={logout} onEditProfile={() => setIsEditingProfile(true)} /> 
       : <ConnectPage />;
   }
   
-  // If not logged in, show public pages
   if (publicPage === 'auth') {
     return <AuthPage />;
   }
@@ -81,7 +83,7 @@ function App() {
 }
 
 
-// --- SenderView (Modified to handle rejections) ---
+// --- SenderView ---
 function SenderView() {
   const { user } = useContext(AuthContext);
   const [order, setOrder] = useState({});
@@ -102,25 +104,23 @@ function SenderView() {
       }, 3000);
     };
     
-    // --- NEW: Listen for the 'order_rejected' event ---
     const handleOrderRejected = (rejectedOrderId) => {
         setSentOrders(prev =>
             prev.map(o => (o._id === rejectedOrderId ? { ...o, status: 'rejected' } : o))
         );
-        // Optional: Remove the rejected card after a longer period
         setTimeout(() => {
             setSentOrders(prev => prev.filter(o => o._id !== rejectedOrderId));
-        }, 8000); // Remove after 8 seconds
+        }, 8000);
     };
 
     socket.on('order_saved', handleOrderSaved);
     socket.on('order_acknowledged', handleOrderAcknowledged);
-    socket.on('order_rejected', handleOrderRejected); // Add the new listener
+    socket.on('order_rejected', handleOrderRejected);
 
     return () => {
       socket.off('order_saved', handleOrderSaved);
       socket.off('order_acknowledged', handleOrderAcknowledged);
-      socket.off('order_rejected', handleOrderRejected); // Clean up the listener
+      socket.off('order_rejected', handleOrderRejected);
     };
   }, []);
 
@@ -146,10 +146,8 @@ function SenderView() {
               {ord.status === 'sending' && 'Sending...'}
               {ord.status === 'pending' && 'Sent!'}
               {ord.status === 'acknowledged' && 'Seen ✅'}
-              {/* --- NEW: Display for rejected status --- */}
               {ord.status === 'rejected' && `Rejected by ${user.partnerId?.displayName || 'Receiver'} ❌`}
             </h4>
-            {/* Only show order items if not rejected */}
             {ord.status !== 'rejected' && (
                 <ul>{Object.entries(ord.items).map(([id, qty]) => <li key={id}>{getOrderItemName(id)} (x{qty})</li>)}</ul>
             )}
@@ -169,6 +167,8 @@ function SenderView() {
     </>
   );
 }
+
+// --- ReceiverView ---
 function ReceiverView() {
   const { user, token } = useContext(AuthContext);
   const [activeOrder, setActiveOrder] = useState(null);
@@ -197,7 +197,6 @@ function ReceiverView() {
     }
   };
   
-  // --- NEW: Function to handle rejecting an order ---
   const handleReject = () => {
     if (activeOrder && user?._id) {
         socket.emit('reject_order', { orderId: activeOrder._id, receiverId: user._id });
@@ -216,7 +215,6 @@ function ReceiverView() {
             <ul>{Object.entries(activeOrder.items).map(([itemId, quantity]) => (
                 <li key={itemId}><span>{getOrderItemName(itemId)}</span><span className="order-quantity">x {quantity}</span></li>
               ))}</ul>
-            {/* --- NEW: Button container and Reject button --- */}
             <div className="order-actions">
                 <button className="reject-button" onClick={handleReject}>Reject</button>
                 <button className="acknowledge-button" onClick={handleAcknowledge}>Acknowledge</button>
