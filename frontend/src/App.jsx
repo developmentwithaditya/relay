@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext'; // Import the useTheme hook
-import { socket } from './services/api';
+import apiRequest, { socket } from './services/api';
 import { MENU_ITEMS } from './menuItems';
 import HomePage from './HomePage';
 import AuthPage from './AuthPage';
