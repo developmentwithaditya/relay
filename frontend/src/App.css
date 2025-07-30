@@ -1,331 +1,124 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
+/* frontend/src/App.css */
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-.view-switcher {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 24px;
-  background-color: #e5e5ea;
-  border-radius: 8px;
-  padding: 4px;
-}
-
-.view-switcher button {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  background-color: transparent;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.view-switcher button.active {
-  background-color: #ffffff;
-  color: #007aff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.order-display .waiting-text {
-  text-align: center;
-  color: #8e8e93;
-  padding: 40px 0;
-}
-
-.order-card {
-  background-color: #f0f8ff;
-  border: 1px solid #bde0fe;
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.order-card h3 {
-  margin: 0 0 12px 0;
-  color: #005ecb;
-}
-
-.order-card ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.order-card li {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.order-card li:last-child {
-  border-bottom: none;
-}
-
-/* Keep all your existing CSS and add these new styles at the end */
-
-.status-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  font-size: 0.9rem;
-  color: #6c6c70;
-}
-
-.status-indicator {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-right: 8px;
-  transition: background-color 0.3s ease;
-}
-
-.status-indicator.connected {
-  background-color: #34c759; /* Green */
-}
-
-.status-indicator.disconnected {
-  background-color: #ff3b30; /* Red */
-}
-
-.confirmation-message {
-  text-align: center;
-  padding: 10px;
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border-radius: 6px;
-  margin-bottom: 16px;
-  font-weight: 500;
-}
-
-.order-card.animate-fade-in {
-  animation: fadeIn 0.5s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.order-quantity {
-  font-weight: 600;
-  color: #007aff;
-}
-
-/* Add these new styles to the end of your App.css file */
-
-.acknowledge-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 16px;
-  border: none;
-  background-color: #34c759; /* Green */
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.acknowledge-button:hover {
-  background-color: #2e9a49;
-}
-
-.status-card {
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  border: 1px solid;
-}
-
-.status-card.pending {
-  background-color: #fffbe6;
-  border-color: #ffe58f;
-}
-
-.status-card.acknowledged {
-  background-color: #f6ffed;
-  border-color: #b7eb8f;
-}
-
-.status-card h4 {
-  margin: 0 0 8px 0;
-  font-size: 1rem;
-}
-
-.status-card ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 0.9rem;
-  color: #555;
-}
-
-.status-card li {
-  padding: 2px 0;
-}
-
-/* --- Base Mobile Styles (Existing CSS) --- */
+/* --- Base Mobile Styles --- */
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background-color: #ffffff; /* White background for mobile */
+  background-color: #ffffff;
   margin: 0;
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* Align to top for mobile */
+  align-items: flex-start;
   min-height: 100vh;
   box-sizing: border-box;
 }
 
+.app-wrapper {
+  width: 100%;
+}
+
 .app-container {
   width: 100%;
-  max-width: 450px; /* Slightly wider for modern phones */
+  max-width: 450px;
   background-color: #ffffff;
   padding: 20px;
   box-sizing: border-box;
+  margin: 0 auto;
 }
 
-.status-bar {
+/* --- App Header (Main View) --- */
+.app-header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.profile-section {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  font-size: 0.9rem;
-  color: #6c6c70;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 1.1rem;
 }
 
-.status-indicator {
-  width: 10px;
-  height: 10px;
+.header-avatar {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  margin-right: 8px;
-  transition: background-color 0.3s ease;
+  object-fit: cover;
+  border: 2px solid #e5e5ea;
 }
 
-.status-indicator.connected {
-  background-color: #34c759; /* Green */
-}
-
-.status-indicator.disconnected {
-  background-color: #ff3b30; /* Red */
-}
-
-.view-switcher {
+.header-actions {
   display: flex;
-  justify-content: center;
-  margin-bottom: 24px;
-  background-color: #e5e5ea;
-  border-radius: 8px;
-  padding: 4px;
+  gap: 10px;
+  align-items: center;
 }
 
-.view-switcher button {
-  flex: 1;
+.edit-profile-button {
+  background-color: #f0f2f5;
+  color: #3c3c43;
+  border: 1px solid #d1d1d6;
   padding: 8px 12px;
-  border: none;
-  background-color: transparent;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: background-color 0.2s;
+}
+.edit-profile-button:hover {
+    background-color: #e5e5ea;
 }
 
-.view-switcher button.active {
-  background-color: #ffffff;
-  color: #007aff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+.logout-button {
+  background-color: #f0f2f5;
+  color: #3c3c43;
+  border: 1px solid #d1d1d6;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.logout-button:hover {
+  background-color: #e5e5ea;
 }
 
+/* --- Generic App Header (Sender/Receiver Views) --- */
 .app-header {
   text-align: center;
   margin-bottom: 24px;
 }
-
 .app-header h1 {
   margin: 0;
   font-size: 2.2rem;
   color: #1c1c1e;
 }
-
 .app-header p {
   margin: 4px 0 0;
   color: #6c6c70;
 }
 
+/* --- Menu & Order Styles --- */
 .menu-item {
   display: flex;
   align-items: center;
   padding: 16px 4px;
   border-bottom: 1px solid #e5e5ea;
 }
-
 .item-icon {
   font-size: 1.5rem;
   margin-right: 16px;
 }
-
 .item-name {
   font-size: 1.1rem;
   font-weight: 500;
   flex-grow: 1;
 }
-
 .quantity-selector {
   display: flex;
   align-items: center;
 }
-
 .quantity-selector button {
   width: 32px;
   height: 32px;
@@ -334,11 +127,7 @@ body {
   background-color: #fff;
   font-size: 1.2rem;
   cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
-
 .quantity-selector span {
   margin: 0 16px;
   font-size: 1.2rem;
@@ -347,31 +136,17 @@ body {
   text-align: center;
 }
 
-.send-order-button, .acknowledge-button {
+.send-order-button {
   width: 100%;
   padding: 16px;
   margin-top: 24px;
   border: none;
   color: white;
+  background-color: #007aff;
   font-size: 1.1rem;
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.send-order-button {
-  background-color: #007aff;
-}
-.send-order-button:hover {
-  background-color: #005ecb;
-}
-
-.acknowledge-button {
-  background-color: #34c759;
-}
-.acknowledge-button:hover {
-  background-color: #2e9a49;
 }
 
 .order-display .waiting-text {
@@ -379,7 +154,6 @@ body {
   color: #8e8e93;
   padding: 40px 0;
 }
-
 .order-card {
   background-color: #f0f8ff;
   border: 1px solid #bde0fe;
@@ -387,70 +161,53 @@ body {
   padding: 16px;
   animation: fadeIn 0.5s ease-in-out;
 }
-
-.order-card h3 {
-  margin: 0 0 12px 0;
-  color: #005ecb;
-}
-
-.order-card ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.order-card li {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #e0e0e0;
-}
+.order-card h3 { margin: 0 0 12px 0; color: #005ecb; }
+.order-card ul { list-style: none; padding: 0; margin: 0; }
+.order-card li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0; }
 .order-card li:last-child { border-bottom: none; }
+.order-quantity { font-weight: 600; color: #007aff; }
 
-.order-quantity {
+.acknowledge-button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+  border: none;
+  background-color: #34c759;
+  color: white;
+  font-size: 1rem;
   font-weight: 600;
-  color: #007aff;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
+/* --- Status Cards --- */
 .status-card-container {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-bottom: 20px;
 }
-
 .status-card {
   padding: 12px 16px;
   border-radius: 8px;
   border: 1px solid;
   transition: all 0.3s ease-in-out;
 }
+.status-card.sending { background-color: #f0f2f5; border-color: #d1d1d6; }
+.status-card.pending { background-color: #fffbe6; border-color: #ffe58f; }
+.status-card.acknowledged { background-color: #f6ffed; border-color: #b7eb8f; }
+.status-card h4 { margin: 0 0 8px 0; font-size: 1rem; }
+.status-card ul { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; color: #555; }
+.status-card li { padding: 2px 0; }
 
-.status-card.pending {
-  background-color: #fffbe6;
-  border-color: #ffe58f;
-}
-
-.status-card.acknowledged {
-  background-color: #f6ffed;
-  border-color: #b7eb8f;
-}
-
-.status-card h4 {
-  margin: 0 0 8px 0;
-  font-size: 1rem;
-}
-
-.status-card ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 0.9rem;
-  color: #555;
-}
-
-.status-card li {
-  padding: 2px 0;
+/* --- Animations & Misc --- */
+.loading-fullscreen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.5rem;
+  color: #6c6c70;
 }
 
 @keyframes fadeIn {
@@ -458,50 +215,20 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- NEW: Responsive Styles for Tablets and Desktops --- */
+/* --- Responsive Styles --- */
 @media (min-width: 768px) {
   body {
-    background-color: #f0f2f5; /* Light grey background on larger screens */
-    align-items: center; /* Vertically center the container */
+    background-color: #f0f2f5;
+    align-items: center;
   }
-
   .app-container {
-    max-width: 500px; /* A bit wider on desktop */
+    max-width: 500px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin-top: 0;
+    margin: 2rem 0;
     padding: 32px;
   }
-
   .app-header h1 {
-    font-size: 2.8rem; /* Larger title */
+    font-size: 2.8rem;
   }
-}
-
-/* Add these new styles to the end of your App.css file */
-
-.app-wrapper {
-  width: 100%;
-}
-
-.app-header-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.logout-button {
-  background-color: #e5e5ea;
-  color: #3c3c43;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.logout-button:hover {
-  background-color: #d1d1d6;
 }

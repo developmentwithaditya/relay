@@ -81,6 +81,55 @@ app.post('/api/register', parser.single('profilePicture'), async (req, res) => {
 // We add express.json() here to apply it to all subsequent routes that expect a JSON body
 app.use(express.json());
 
+// --- NEW: EDIT PROFILE ROUTE ---
+// This route is protected by authMiddleware, so only logged-in users can access it.
+// It also uses the Cloudinary parser to handle an optional new profile picture.
+app.patch('/api/profile', authMiddleware, parser.single('profilePicture'), async (req, res) => {
+    try {
+        const { displayName, currentPassword, newPassword } = req.body;
+        const userId = req.user.userId;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        const updates = {};
+
+        // Update displayName if provided
+        if (displayName) {
+            updates.displayName = displayName;
+        }
+
+        // Update profile picture if a new one is uploaded
+        if (req.file) {
+            updates.profilePictureUrl = req.file.path;
+        }
+
+        // Update password if all conditions are met
+        if (newPassword) {
+            if (!currentPassword) {
+                return res.status(400).json({ message: 'Current password is required to change password.' });
+            }
+            const isMatch = await bcrypt.compare(currentPassword, user.password);
+            if (!isMatch) {
+                return res.status(400).json({ message: 'Incorrect current password.' });
+            }
+            const salt = await bcrypt.genSalt(10);
+            updates.password = await bcrypt.hash(newPassword, salt);
+        }
+
+        // Apply all the updates to the database
+        const updatedUser = await User.findByIdAndUpdate(userId, updates, { new: true }).select('-password');
+
+        res.json(updatedUser);
+
+    } catch (error) {
+        console.error("Profile Update Error:", error);
+        res.status(500).json({ message: 'Server error while updating profile.' });
+    }
+});
+
 // --- MODIFIED: Routes now populate and return new profile fields ---
 app.post('/api/login', async (req, res) => { try { const { email, password } = req.body; const user = await User.findOne({ email }); if (!user) { return res.status(400).json({ message: 'Invalid credentials.' }); } const isMatch = await bcrypt.compare(password, user.password); if (!isMatch) { return res.status(400).json({ message: 'Invalid credentials.' }); } const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' }); res.status(200).json({ token, user: { id: user._id, email: user.email, role: user.role, displayName: user.displayName, profilePictureUrl: user.profilePictureUrl }, }); } catch (error) { res.status(500).json({ message: 'Server error during login.', error }); } });
 app.get('/api/me', authMiddleware, async (req, res) => { try { const user = await User.findById(req.user.userId).select('-password').populate('partnerId', 'email role displayName profilePictureUrl').populate('pendingRequests', 'email role displayName profilePictureUrl'); res.json(user); } catch (error) { res.status(500).json({ message: 'Error fetching user profile.' }); } });
