@@ -15,6 +15,41 @@ function MainApp({ user, onLogout, onEditProfile }) {
   const { theme, toggleTheme } = useTheme();
   const view = user.role;
   const [isManagingPresets, setIsManagingPresets] = useState(false);
+  const [isConnected, setIsConnected] = useState(socket.connected);
+
+  // --- BUG FIX: Robust socket registration ---
+  useEffect(() => {
+    // This function registers the user with the backend
+    const registerSocket = () => {
+      if (user?._id) {
+        socket.emit('register_socket', user._id);
+      }
+    };
+
+    // Define handlers for connect and disconnect events
+    const onConnect = () => {
+      setIsConnected(true);
+      registerSocket(); // Register the user as soon as connection is established
+    };
+    const onDisconnect = () => {
+      setIsConnected(false);
+    };
+
+    // Attach the event listeners
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+
+    // If the socket is already connected when the component mounts, register immediately.
+    if (socket.connected) {
+      registerSocket();
+    }
+
+    // Cleanup function to remove listeners when the component unmounts or user changes
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+    };
+  }, [user]); // Re-run this logic if the user logs in or out
 
   if (view === 'sender' && isManagingPresets) {
     return <PresetManagerPage onBack={() => setIsManagingPresets(false)} />;
@@ -64,8 +99,6 @@ function SenderView() {
     }, {});
   }, [user?.presets]);
 
- // *** BUG FIX: Added `user` to dependency array ***
-  // This ensures listeners are correctly set up for the logged-in user.
   useEffect(() => {
     const handleOrderSaved = ({ tempId, dbId }) => setSentOrders(p => p.map(o => (o.tempId === tempId ? { ...o, _id: dbId, status: 'pending' } : o)));
     const handleOrderAcknowledged = (id) => {
@@ -86,21 +119,18 @@ function SenderView() {
       socket.off('order_acknowledged', handleOrderAcknowledged);
       socket.off('order_rejected', handleOrderRejected);
     };
-  }, [user]); // Dependency on user ensures this runs on login
+  }, [user]);
 
-  // --- MODIFIED: sendOrder now handles both custom and preset orders ---
   const sendOrder = (items) => {
     let itemsToSend = {};
-
-    if (Array.isArray(items)) { // This is a custom preset with an array of {name, quantity}
+    if (Array.isArray(items)) {
         itemsToSend = items.reduce((acc, item) => {
             acc[item.name] = item.quantity;
             return acc;
         }, {});
-    } else { // This is a custom order from the predefined menu
+    } else {
         itemsToSend = Object.entries(order).filter(([, qty]) => qty > 0).reduce((acc, [id, qty]) => ({ ...acc, [id]: qty }), {});
     }
-
     if (Object.keys(itemsToSend).length > 0 && user?._id) {
       const tempId = `temp_${Date.now()}`;
       const tempOrder = { tempId, items: itemsToSend, status: 'sending' };
@@ -126,7 +156,6 @@ function SenderView() {
             )}
           </div>))}
       </div>
-
       <div className="presets-section">
         <h3>Your Presets</h3>
         {user.categories?.length > 0 ? (
@@ -148,7 +177,6 @@ function SenderView() {
           <p className="no-presets-text">You have no presets. Click 'Presets' in the header to create some!</p>
         )}
       </div>
-
       <div className="custom-order-section">
         <h3>Or, Send a Quick Request</h3>
         <div className="menu-container">{MENU_ITEMS.map(item => (
@@ -204,7 +232,6 @@ function ReceiverView() {
       <div className="order-display">{activeOrder ? (
           <div className="order-card animate-fade-in">
             <h3>New Order Received!</h3>
-            {/* --- MODIFIED: Simplified list rendering --- */}
             <ul>{Object.entries(activeOrder.items).map(([name, quantity]) => (
                 <li key={name}><span>{name}</span><span className="order-quantity">x {quantity}</span></li>
               ))}</ul>
