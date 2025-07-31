@@ -83,7 +83,8 @@ function App() {
   if (isLoggedIn && isEditingProfile) return <EditProfilePage onBack={() => setIsEditingProfile(false)} />;
   if (isLoggedIn && user) return user.partnerId ? <MainApp user={user} onLogout={logout} onEditProfile={() => setIsEditingProfile(true)} /> : <ConnectPage />;
   if (publicPage === 'auth') return <AuthPage />;
-  return <HomePage onNavigate={() => setPublicPage('auth')} />;
+  // --- MODIFIED: Changed prop name from 'onNavigate' to 'onGetStarted' ---
+  return <HomePage onGetStarted={() => setPublicPage('auth')} />;
 }
 
 function SenderView() {
