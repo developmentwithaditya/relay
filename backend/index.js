@@ -225,6 +225,35 @@ app.delete('/api/presets/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// --- NEW: [PATCH] /api/presets/:id - Update an existing preset ---
+app.patch('/api/presets/:id', authMiddleware, async (req, res) => {
+    try {
+        const { name, customItems, category } = req.body;
+        const presetId = req.params.id;
+
+        if (!name || !customItems || !category) {
+            return res.status(400).json({ message: 'Preset name, items, and category are required.' });
+        }
+
+        const user = await User.findById(req.user.userId);
+        if (!user) return res.status(404).json({ message: 'User not found.' });
+
+        const preset = user.presets.id(presetId);
+        if (!preset) return res.status(404).json({ message: 'Preset not found.' });
+
+        // Update the preset's properties
+        preset.name = name;
+        preset.customItems = customItems;
+        preset.category = category;
+
+        await user.save();
+        res.json(user.presets); // Send back the updated list of presets
+    } catch (error) {
+        if (error.name === 'ValidationError') return res.status(400).json({ message: error.message });
+        res.status(500).json({ message: 'Server error updating preset.' });
+    }
+});
+
 // [GET] /api/pending-orders
 app.get("/api/pending-orders", authMiddleware, async (req, res) => {
   try {

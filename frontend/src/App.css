@@ -756,3 +756,98 @@ body {
     font-style: italic;
     text-align: center;
 }
+/* --- Add to end of App.css --- */
+
+.manage-presets-button {
+    padding: 8px 12px;
+}
+
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+}
+
+.preset-card {
+    background-color: var(--card-bg);
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.preset-name {
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.preset-card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.preset-action-btn {
+    flex: 1;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
+}
+
+.preset-action-btn.send {
+    background-color: var(--primary-button-bg);
+    color: var(--primary-button-text);
+    border: none;
+}
+
+/* Quick Request Builder Styles */
+.quick-request-builder {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.available-items h4, .current-request h4 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: var(--secondary-text);
+    font-size: 0.9rem;
+}
+
+.item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.5rem;
+}
+
+.add-item-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 0.5rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.request-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.no-items-text {
+    text-align: center;
+    color: var(--secondary-text);
+    font-style: italic;
+    padding: 1rem;
+    background-color: var(--secondary-bg);
+    border-radius: 8px;
+}
+
+.send-order-button:disabled {
+    background-color: var(--button-bg);
+    color: var(--secondary-text);
+    cursor: not-allowed;
+}

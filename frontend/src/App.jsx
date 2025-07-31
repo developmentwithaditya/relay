@@ -11,48 +11,47 @@ import EditProfilePage from './EditProfilePage';
 import PresetManagerPage from './PresetManagerPage';
 import './App.css';
 
+// --- MainApp Component (For connected users) ---
 function MainApp({ user, onLogout, onEditProfile }) {
   const { theme, toggleTheme } = useTheme();
   const view = user.role;
-  const [isManagingPresets, setIsManagingPresets] = useState(false);
   const [isConnected, setIsConnected] = useState(socket.connected);
+  
+  // State to control the preset manager's visibility, mode, and the ID of the preset being edited
+  const [presetManagerState, setPresetManagerState] = useState({ 
+    isOpen: false, 
+    mode: 'add', 
+    presetId: null 
+  });
 
-  // --- BUG FIX: Robust socket registration ---
+  // Effect to handle robust socket registration, ensuring real-time connection
   useEffect(() => {
-    // This function registers the user with the backend
     const registerSocket = () => {
-      if (user?._id) {
-        socket.emit('register_socket', user._id);
-      }
+      if (user?._id) socket.emit('register_socket', user._id);
     };
-
-    // Define handlers for connect and disconnect events
     const onConnect = () => {
       setIsConnected(true);
-      registerSocket(); // Register the user as soon as connection is established
+      registerSocket();
     };
-    const onDisconnect = () => {
-      setIsConnected(false);
-    };
-
-    // Attach the event listeners
+    const onDisconnect = () => setIsConnected(false);
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
-
-    // If the socket is already connected when the component mounts, register immediately.
-    if (socket.connected) {
-      registerSocket();
-    }
-
-    // Cleanup function to remove listeners when the component unmounts or user changes
+    if (socket.connected) registerSocket();
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
     };
-  }, [user]); // Re-run this logic if the user logs in or out
+  }, [user]);
 
-  if (view === 'sender' && isManagingPresets) {
-    return <PresetManagerPage onBack={() => setIsManagingPresets(false)} />;
+  // If the preset manager should be open, render it instead of the main app view
+  if (view === 'sender' && presetManagerState.isOpen) {
+    return (
+      <PresetManagerPage
+        onBack={() => setPresetManagerState({ isOpen: false, mode: 'add', presetId: null })}
+        mode={presetManagerState.mode}
+        presetId={presetManagerState.presetId}
+      />
+    );
   }
 
   return (
@@ -64,16 +63,25 @@ function MainApp({ user, onLogout, onEditProfile }) {
         </div>
         <div className="header-actions">
           <button onClick={toggleTheme} className="theme-toggle-button" aria-label="Toggle theme">{theme === 'light' ? '🌙' : '☀️'}</button>
-          {view === 'sender' && <button onClick={() => setIsManagingPresets(true)} className="manage-presets-button">Presets</button>}
+          {view === 'sender' && (
+            <button onClick={() => setPresetManagerState({ isOpen: true, mode: 'add', presetId: null })} className="manage-presets-button">
+              Manage Presets
+            </button>
+          )}
           <button onClick={onEditProfile} className="edit-profile-button">Edit</button>
           <button onClick={onLogout} className="logout-button">Logout</button>
         </div>
       </div>
-      {view === 'sender' ? <SenderView /> : <ReceiverView />}
+      {view === 'sender' ? (
+        <SenderView onEditPreset={(presetId) => setPresetManagerState({ isOpen: true, mode: 'edit', presetId })} />
+      ) : (
+        <ReceiverView />
+      )}
     </div>
   );
 }
 
+// --- App Component (The Master Router) ---
 function App() {
   const { isLoggedIn, user, logout, authReady } = useContext(AuthContext);
   const [publicPage, setPublicPage] = useState('home');
@@ -83,14 +91,15 @@ function App() {
   if (isLoggedIn && isEditingProfile) return <EditProfilePage onBack={() => setIsEditingProfile(false)} />;
   if (isLoggedIn && user) return user.partnerId ? <MainApp user={user} onLogout={logout} onEditProfile={() => setIsEditingProfile(true)} /> : <ConnectPage />;
   if (publicPage === 'auth') return <AuthPage />;
-  // --- MODIFIED: Changed prop name from 'onNavigate' to 'onGetStarted' ---
   return <HomePage onGetStarted={() => setPublicPage('auth')} />;
 }
 
-function SenderView() {
+
+// --- SenderView ---
+function SenderView({ onEditPreset }) {
   const { user } = useContext(AuthContext);
-  const [order, setOrder] = useState({});
   const [sentOrders, setSentOrders] = useState([]);
+  const [quickRequestItems, setQuickRequestItems] = useState({});
 
   const presetsByCategory = useMemo(() => {
     if (!user?.presets) return {};
@@ -110,11 +119,9 @@ function SenderView() {
       setSentOrders(p => p.map(o => (o._id === id ? { ...o, status: 'rejected' } : o)));
       setTimeout(() => setSentOrders(p => p.filter(o => o._id !== id)), 8000);
     };
-    
     socket.on('order_saved', handleOrderSaved);
     socket.on('order_acknowledged', handleOrderAcknowledged);
     socket.on('order_rejected', handleOrderRejected);
-    
     return () => {
       socket.off('order_saved', handleOrderSaved);
       socket.off('order_acknowledged', handleOrderAcknowledged);
@@ -122,29 +129,42 @@ function SenderView() {
     };
   }, [user]);
 
+  const handleQuickItemAdd = (itemId) => {
+    setQuickRequestItems(prev => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
+  };
+
+  const handleQuickItemChange = (itemId, newQuantity) => {
+    const qty = Math.max(0, newQuantity);
+    if (qty === 0) {
+      const { [itemId]: _, ...rest } = quickRequestItems;
+      setQuickRequestItems(rest);
+    } else {
+      setQuickRequestItems(prev => ({ ...prev, [itemId]: qty }));
+    }
+  };
+
   const sendOrder = (items) => {
     let itemsToSend = {};
-    if (Array.isArray(items)) {
-        itemsToSend = items.reduce((acc, item) => {
-            acc[item.name] = item.quantity;
-            return acc;
-        }, {});
-    } else {
-        itemsToSend = Object.entries(order).filter(([, qty]) => qty > 0).reduce((acc, [id, qty]) => ({ ...acc, [id]: qty }), {});
+    if (Array.isArray(items)) { // This is a custom preset with an array of {name, quantity}
+        itemsToSend = items.reduce((acc, item) => ({ ...acc, [item.name]: item.quantity }), {});
+    } else { // This is a quick request with an object of {id: quantity}
+        itemsToSend = items;
     }
+
     if (Object.keys(itemsToSend).length > 0 && user?._id) {
       const tempId = `temp_${Date.now()}`;
       const tempOrder = { tempId, items: itemsToSend, status: 'sending' };
       setSentOrders(prev => [...prev, tempOrder]);
       socket.emit('send_order', { items: itemsToSend, senderId: user._id, tempId });
-      setOrder({});
+      setQuickRequestItems({}); // Clear quick request after sending
     }
   };
   
   return (
     <>
      <header className="app-header"><h1>Send Request</h1><p>Send to: {user.partnerId?.displayName || '...'}</p></header>
-      <div className="status-card-container">{sentOrders.map(ord => (
+      <div className="status-card-container">
+        {sentOrders.map(ord => (
           <div key={ord.tempId || ord._id} className={`status-card ${ord.status}`}>
             <h4>
               {ord.status === 'sending' && 'Sending...'}
@@ -153,49 +173,78 @@ function SenderView() {
               {ord.status === 'rejected' && `Rejected by ${user.partnerId?.displayName || 'Receiver'} ❌`}
             </h4>
             {ord.status !== 'rejected' && (
-                <ul>{Object.entries(ord.items).map(([name, qty]) => <li key={name}>{name} (x{qty})</li>)}</ul>
+                <ul>{Object.entries(ord.items).map(([name, qty]) => <li key={name}>{MENU_ITEMS.find(i => i.id == name)?.name || name} (x{qty})</li>)}</ul>
             )}
           </div>))}
       </div>
+
       <div className="presets-section">
         <h3>Your Presets</h3>
-        {user.categories?.length > 0 ? (
-          user.categories.map(category => (
-            presetsByCategory[category] && (
-              <div key={category} className="preset-category">
-                <h5>{category}</h5>
-                <div className="preset-buttons">
-                  {presetsByCategory[category].map(preset => (
-                    <button key={preset._id} className="preset-button" onClick={() => sendOrder(preset.customItems)}>
-                      {preset.name}
-                    </button>
-                  ))}
-                </div>
+        {user.presets?.length > 0 ? (
+          Object.keys(presetsByCategory).map(category => (
+            <div key={category} className="preset-category">
+              <h5>{category}</h5>
+              <div className="preset-grid">
+                {presetsByCategory[category].map(preset => (
+                  <div key={preset._id} className="preset-card">
+                    <span className="preset-name">{preset.name}</span>
+                    <div className="preset-card-actions">
+                      <button onClick={() => onEditPreset(preset._id)} className="preset-action-btn">Edit</button>
+                      <button onClick={() => sendOrder(preset.customItems)} className="preset-action-btn send">Send</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )
+            </div>
           ))
-        ) : (
-          <p className="no-presets-text">You have no presets. Click 'Presets' in the header to create some!</p>
-        )}
+        ) : <p className="no-presets-text">Click 'Manage Presets' to create your first one!</p>}
       </div>
+
       <div className="custom-order-section">
-        <h3>Or, Send a Quick Request</h3>
-        <div className="menu-container">{MENU_ITEMS.map(item => (
-            <div key={item.id} className="menu-item">
-              <span className="item-icon">{item.icon}</span><span className="item-name">{item.name}</span>
-              <div className="quantity-selector">
-                <button onClick={() => setOrder(p => ({ ...p, [item.id]: Math.max(0, (p[item.id] || 0) - 1) }))}>-</button>
-                <span>{order[item.id] || 0}</span>
-                <button onClick={() => setOrder(p => ({ ...p, [item.id]: (p[item.id] || 0) + 1 }))}>+</button>
+        <h3>Quick Request</h3>
+        <div className="quick-request-builder">
+          <div className="available-items">
+            <h4>Add an Item</h4>
+            <div className="item-grid">
+              {MENU_ITEMS.map(item => (
+                <button key={item.id} className="add-item-card" onClick={() => handleQuickItemAdd(item.id)}>
+                  <span className="item-icon">{item.icon}</span>
+                  <span>{item.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="current-request">
+            <h4>Current List</h4>
+            {Object.keys(quickRequestItems).length > 0 ? (
+              <div className="request-list">
+                {Object.entries(quickRequestItems).map(([id, qty]) => (
+                  <div key={id} className="menu-item">
+                    <span className="item-name">{MENU_ITEMS.find(i => i.id == id)?.name}</span>
+                    <div className="quantity-selector">
+                      <button onClick={() => handleQuickItemChange(id, qty - 1)}>-</button>
+                      <span>{qty}</span>
+                      <button onClick={() => handleQuickItemChange(id, qty + 1)}>+</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>))}
+            ) : <p className="no-items-text">Click an item to add it.</p>}
+          </div>
         </div>
-        <button className="send-order-button" onClick={() => sendOrder()}>Send Quick Request</button>
+        <button 
+          className="send-order-button" 
+          onClick={() => sendOrder(quickRequestItems)}
+          disabled={Object.keys(quickRequestItems).length === 0}
+        >
+          Send Quick Request
+        </button>
       </div>
     </>
   );
 }
 
+// --- ReceiverView ---
 function ReceiverView() {
   const { user, token } = useContext(AuthContext);
   const [activeOrder, setActiveOrder] = useState(null);
