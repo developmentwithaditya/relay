@@ -17,14 +17,12 @@ function MainApp({ user, onLogout, onEditProfile }) {
   const view = user.role;
   const [isConnected, setIsConnected] = useState(socket.connected);
   
-  // State to control the preset manager's visibility, mode, and the ID of the preset being edited
   const [presetManagerState, setPresetManagerState] = useState({ 
     isOpen: false, 
     mode: 'add', 
     presetId: null 
   });
 
-  // Effect to handle robust socket registration, ensuring real-time connection
   useEffect(() => {
     const registerSocket = () => {
       if (user?._id) socket.emit('register_socket', user._id);
@@ -43,7 +41,6 @@ function MainApp({ user, onLogout, onEditProfile }) {
     };
   }, [user]);
 
-  // If the preset manager should be open, render it instead of the main app view
   if (view === 'sender' && presetManagerState.isOpen) {
     return (
       <PresetManagerPage
@@ -100,6 +97,10 @@ function SenderView({ onEditPreset }) {
   const { user } = useContext(AuthContext);
   const [sentOrders, setSentOrders] = useState([]);
   const [quickRequestItems, setQuickRequestItems] = useState({});
+  
+  // --- STEP 2: State for the new custom item modal ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [customItemName, setCustomItemName] = useState('');
 
   const presetsByCategory = useMemo(() => {
     if (!user?.presets) return {};
@@ -136,32 +137,73 @@ function SenderView({ onEditPreset }) {
   const handleQuickItemChange = (itemId, newQuantity) => {
     const qty = Math.max(0, newQuantity);
     if (qty === 0) {
-      const { [itemId]: _, ...rest } = quickRequestItems;
-      setQuickRequestItems(rest);
+      handleQuickItemDelete(itemId);
     } else {
       setQuickRequestItems(prev => ({ ...prev, [itemId]: qty }));
     }
   };
 
+  const handleQuickItemDelete = (itemIdToDelete) => {
+    setQuickRequestItems(prev => {
+      const { [itemIdToDelete]: _, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  // --- STEP 2: Handler for the new custom item modal form ---
+  const handleAddCustomItem = (e) => {
+    e.preventDefault();
+    if (customItemName && customItemName.trim() !== "") {
+      const trimmedName = customItemName.trim();
+      setQuickRequestItems(prev => ({
+        ...prev,
+        [trimmedName]: (prev[trimmedName] || 0) + 1
+      }));
+      setCustomItemName(''); // Reset input
+      setIsModalOpen(false); // Close modal
+    }
+  };
+
   const sendOrder = (items) => {
     let itemsToSend = {};
-    if (Array.isArray(items)) { // This is a custom preset with an array of {name, quantity}
+    if (Array.isArray(items)) {
         itemsToSend = items.reduce((acc, item) => ({ ...acc, [item.name]: item.quantity }), {});
-    } else { // This is a quick request with an object of {id: quantity}
+    } else {
         itemsToSend = items;
     }
-
     if (Object.keys(itemsToSend).length > 0 && user?._id) {
       const tempId = `temp_${Date.now()}`;
       const tempOrder = { tempId, items: itemsToSend, status: 'sending' };
       setSentOrders(prev => [...prev, tempOrder]);
       socket.emit('send_order', { items: itemsToSend, senderId: user._id, tempId });
-      setQuickRequestItems({}); // Clear quick request after sending
+      setQuickRequestItems({});
     }
   };
   
   return (
     <>
+     {/* --- STEP 2: Render the custom item modal if it's open --- */}
+     {isModalOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-content">
+            <h3>Add Custom Item</h3>
+            <form onSubmit={handleAddCustomItem}>
+              <input
+                type="text"
+                value={customItemName}
+                onChange={(e) => setCustomItemName(e.target.value)}
+                placeholder="e.g., Bread, Milk..."
+                autoFocus
+              />
+              <div className="modal-actions">
+                <button type="button" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit">Add Item</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
      <header className="app-header"><h1>Send Request</h1><p>Send to: {user.partnerId?.displayName || '...'}</p></header>
       <div className="status-card-container">
         {sentOrders.map(ord => (
@@ -204,7 +246,10 @@ function SenderView({ onEditPreset }) {
         <h3>Quick Request</h3>
         <div className="quick-request-builder">
           <div className="available-items">
-            <h4>Add an Item</h4>
+            <div className="available-items-header">
+              <h4>Add an Item</h4>
+              <button className="add-custom-item-btn" onClick={() => setIsModalOpen(true)}>+ Custom</button>
+            </div>
             <div className="item-grid">
               {MENU_ITEMS.map(item => (
                 <button key={item.id} className="add-item-card" onClick={() => handleQuickItemAdd(item.id)}>
@@ -218,13 +263,16 @@ function SenderView({ onEditPreset }) {
             <h4>Current List</h4>
             {Object.keys(quickRequestItems).length > 0 ? (
               <div className="request-list">
-                {Object.entries(quickRequestItems).map(([id, qty]) => (
-                  <div key={id} className="menu-item">
-                    <span className="item-name">{MENU_ITEMS.find(i => i.id == id)?.name}</span>
-                    <div className="quantity-selector">
-                      <button onClick={() => handleQuickItemChange(id, qty - 1)}>-</button>
-                      <span>{qty}</span>
-                      <button onClick={() => handleQuickItemChange(id, qty + 1)}>+</button>
+                {Object.entries(quickRequestItems).map(([idOrName, qty]) => (
+                  <div key={idOrName} className="menu-item quick-request-item">
+                    <span className="item-name">{MENU_ITEMS.find(i => i.id == idOrName)?.name || idOrName}</span>
+                    <div className="item-controls">
+                      <div className="quantity-selector">
+                        <button onClick={() => handleQuickItemChange(idOrName, qty - 1)}>-</button>
+                        <span>{qty}</span>
+                        <button onClick={() => handleQuickItemChange(idOrName, qty + 1)}>+</button>
+                      </div>
+                      <button className="delete-quick-item-btn" onClick={() => handleQuickItemDelete(idOrName)}>×</button>
                     </div>
                   </div>
                 ))}
