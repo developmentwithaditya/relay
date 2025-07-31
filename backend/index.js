@@ -264,6 +264,37 @@ app.get("/api/pending-orders", authMiddleware, async (req, res) => {
   }
 });
 
+// [POST] /api/custom-items - Save a new custom item for the user
+app.post('/api/custom-items', authMiddleware, async (req, res) => {
+    try {
+        const { itemName } = req.body;
+        if (!itemName) {
+            return res.status(400).json({ message: 'Item name is required.' });
+        }
+        const user = await User.findById(req.user.userId);
+        if (user.customItems.length >= 20) {
+            return res.status(400).json({ message: 'Maximum of 20 custom items reached.' });
+        }
+        // Use $addToSet to prevent duplicates
+        await User.findByIdAndUpdate(req.user.userId, { $addToSet: { customItems: itemName } });
+        res.status(201).json({ message: 'Item saved successfully.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error saving item.' });
+    }
+});
+
+// [DELETE] /api/custom-items/:name - Delete a saved custom item
+app.delete('/api/custom-items/:name', authMiddleware, async (req, res) => {
+    try {
+        const itemName = decodeURIComponent(req.params.name);
+        // Use $pull to remove the item from the array
+        await User.findByIdAndUpdate(req.user.userId, { $pull: { customItems: itemName } });
+        res.json({ message: 'Item deleted successfully.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error deleting item.' });
+    }
+});
+
 // --- 6. SOCKET.IO LOGIC ---
 const userSockets = {};
 io.on("connection", (socket) => {

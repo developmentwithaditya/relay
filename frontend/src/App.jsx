@@ -94,11 +94,10 @@ function App() {
 
 // --- SenderView ---
 function SenderView({ onEditPreset }) {
-  const { user } = useContext(AuthContext);
+  const { user, token, refreshUserData } = useContext(AuthContext);
   const [sentOrders, setSentOrders] = useState([]);
   const [quickRequestItems, setQuickRequestItems] = useState({});
   
-  // --- STEP 2: State for the new custom item modal ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [customItemName, setCustomItemName] = useState('');
 
@@ -109,6 +108,17 @@ function SenderView({ onEditPreset }) {
       return acc;
     }, {});
   }, [user?.presets]);
+
+  // Combine default menu items with user's saved custom items for the grid
+  const availableItems = useMemo(() => {
+    const userCustomItems = user.customItems?.map(name => ({
+      id: name, // Use the name as a unique ID for React keys
+      name: name,
+      icon: '📝', // A generic icon for custom items
+      isCustom: true,
+    })) || [];
+    return [...MENU_ITEMS, ...userCustomItems];
+  }, [user.customItems]);
 
   useEffect(() => {
     const handleOrderSaved = ({ tempId, dbId }) => setSentOrders(p => p.map(o => (o.tempId === tempId ? { ...o, _id: dbId, status: 'pending' } : o)));
@@ -130,37 +140,44 @@ function SenderView({ onEditPreset }) {
     };
   }, [user]);
 
-  const handleQuickItemAdd = (itemId) => {
-    setQuickRequestItems(prev => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
-  };
-
   const handleQuickItemChange = (itemId, newQuantity) => {
     const qty = Math.max(0, newQuantity);
     if (qty === 0) {
-      handleQuickItemDelete(itemId);
+      const { [itemId]: _, ...rest } = quickRequestItems;
+      setQuickRequestItems(rest);
     } else {
       setQuickRequestItems(prev => ({ ...prev, [itemId]: qty }));
     }
   };
 
-  const handleQuickItemDelete = (itemIdToDelete) => {
-    setQuickRequestItems(prev => {
-      const { [itemIdToDelete]: _, ...rest } = prev;
-      return rest;
-    });
-  };
-
-  // --- STEP 2: Handler for the new custom item modal form ---
   const handleAddCustomItem = (e) => {
     e.preventDefault();
     if (customItemName && customItemName.trim() !== "") {
       const trimmedName = customItemName.trim();
-      setQuickRequestItems(prev => ({
-        ...prev,
-        [trimmedName]: (prev[trimmedName] || 0) + 1
-      }));
-      setCustomItemName(''); // Reset input
-      setIsModalOpen(false); // Close modal
+      setQuickRequestItems(prev => ({ ...prev, [trimmedName]: (prev[trimmedName] || 0) + 1 }));
+      setCustomItemName('');
+      setIsModalOpen(false);
+    }
+  };
+
+  const handleSaveItem = async (itemName) => {
+    try {
+      await apiRequest('/api/custom-items', { method: 'POST', token, body: { itemName } });
+      await refreshUserData();
+    } catch (error) {
+      console.error("Failed to save item:", error);
+      alert(error.message);
+    }
+  };
+
+  const handleDeleteSavedItem = async (itemName) => {
+    if (!window.confirm(`Permanently delete "${itemName}" from your saved items?`)) return;
+    try {
+      await apiRequest(`/api/custom-items/${encodeURIComponent(itemName)}`, { method: 'DELETE', token });
+      await refreshUserData();
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+      alert(error.message);
     }
   };
 
@@ -182,7 +199,6 @@ function SenderView({ onEditPreset }) {
   
   return (
     <>
-     {/* --- STEP 2: Render the custom item modal if it's open --- */}
      {isModalOpen && (
         <div className="modal-backdrop">
           <div className="modal-content">
@@ -251,11 +267,16 @@ function SenderView({ onEditPreset }) {
               <button className="add-custom-item-btn" onClick={() => setIsModalOpen(true)}>+ Custom</button>
             </div>
             <div className="item-grid">
-              {MENU_ITEMS.map(item => (
-                <button key={item.id} className="add-item-card" onClick={() => handleQuickItemAdd(item.id)}>
-                  <span className="item-icon">{item.icon}</span>
-                  <span>{item.name}</span>
-                </button>
+              {availableItems.map(item => (
+                <div key={item.id} className="add-item-card-wrapper">
+                  <button className="add-item-card" onClick={() => setQuickRequestItems(p => ({...p, [item.name]: (p[item.name] || 0) + 1}))}>
+                    <span className="item-icon">{item.icon}</span>
+                    <span>{item.name}</span>
+                  </button>
+                  {item.isCustom && (
+                    <button className="delete-saved-item-btn" onClick={() => handleDeleteSavedItem(item.name)}>×</button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -263,28 +284,32 @@ function SenderView({ onEditPreset }) {
             <h4>Current List</h4>
             {Object.keys(quickRequestItems).length > 0 ? (
               <div className="request-list">
-                {Object.entries(quickRequestItems).map(([idOrName, qty]) => (
-                  <div key={idOrName} className="menu-item quick-request-item">
-                    <span className="item-name">{MENU_ITEMS.find(i => i.id == idOrName)?.name || idOrName}</span>
-                    <div className="item-controls">
-                      <div className="quantity-selector">
-                        <button onClick={() => handleQuickItemChange(idOrName, qty - 1)}>-</button>
-                        <span>{qty}</span>
-                        <button onClick={() => handleQuickItemChange(idOrName, qty + 1)}>+</button>
+                {Object.entries(quickRequestItems).map(([name, qty]) => {
+                  const isSaved = user.customItems?.includes(name);
+                  const isPredefined = MENU_ITEMS.some(i => i.name === name);
+                  return (
+                    <div key={name} className="menu-item quick-request-item">
+                      <span className="item-name">{name}</span>
+                      <div className="item-controls">
+                        {!isSaved && !isPredefined && (
+                          <button className="save-quick-item-btn" onClick={() => handleSaveItem(name)} title="Save for later">
+                            +
+                          </button>
+                        )}
+                        <div className="quantity-selector">
+                          <button onClick={() => handleQuickItemChange(name, qty - 1)}>-</button>
+                          <span>{qty}</span>
+                          <button onClick={() => handleQuickItemChange(name, qty + 1)}>+</button>
+                        </div>
                       </div>
-                      <button className="delete-quick-item-btn" onClick={() => handleQuickItemDelete(idOrName)}>×</button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : <p className="no-items-text">Click an item to add it.</p>}
           </div>
         </div>
-        <button 
-          className="send-order-button" 
-          onClick={() => sendOrder(quickRequestItems)}
-          disabled={Object.keys(quickRequestItems).length === 0}
-        >
+        <button className="send-order-button" onClick={() => sendOrder(quickRequestItems)} disabled={Object.keys(quickRequestItems).length === 0}>
           Send Quick Request
         </button>
       </div>

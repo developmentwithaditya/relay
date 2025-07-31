@@ -93,6 +93,19 @@ const userSchema = new mongoose.Schema({
     ],
     default: [],
   },
+
+  // --- NEW: Field to store saved custom items for the Quick Request section ---
+  customItems: {
+    type: [{
+        type: String,
+        trim: true,
+    }],
+    validate: [
+        (val) => val.length <= 20, // Let's give them a generous limit
+        'User can have a maximum of 20 saved custom items.'
+    ],
+    default: [],
+  }
 });
 
 const User = mongoose.model('User', userSchema);

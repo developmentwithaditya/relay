@@ -1,5 +1,6 @@
 /* frontend/src/App.css */
 
+/* --- Base & Layout --- */
 .app-container {
   max-width: 500px;
   margin: 0 auto;
@@ -8,6 +9,7 @@
   min-height: 100vh;
 }
 
+/* --- Header --- */
 .app-header-main {
   display: flex;
   justify-content: space-between;
@@ -19,164 +21,18 @@
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 4px var(--shadow-color);
 }
+.profile-section { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.header-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color); }
+.header-actions { display: flex; gap: 10px; align-items: center; }
+.theme-toggle-button { background-color: transparent; border: 1px solid var(--border-color); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; padding: 0; }
+.logout-button, .edit-profile-button, .manage-presets-button { background-color: var(--button-bg); color: var(--button-text); padding: 8px 12px; }
 
-.profile-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-}
+/* --- General View Headers --- */
+.app-header { text-align: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
+.app-header h1 { margin: 0; font-size: 1.8rem; }
+.app-header p { margin: 0.25rem 0 0; color: var(--secondary-text); }
 
-.header-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--border-color);
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.theme-toggle-button {
-  background-color: transparent;
-  border: 1px solid var(--border-color);
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  padding: 0;
-}
-
-.logout-button, .edit-profile-button, .manage-presets-button {
-  background-color: var(--button-bg);
-  color: var(--button-text);
-  padding: 8px 12px;
-}
-
-.app-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 1rem;
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: 1.8rem;
-}
-
-.app-header p {
-  margin: 0.25rem 0 0;
-  color: var(--secondary-text);
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  background-color: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: 0 2px 4px var(--shadow-color);
-}
-
-.item-icon {
-  font-size: 1.5rem;
-}
-
-.item-name {
-  font-weight: 500;
-  flex-grow: 1;
-}
-
-.quantity-selector {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.quantity-selector button {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  background-color: var(--button-bg);
-  color: var(--button-text);
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-.send-order-button {
-  width: 100%;
-  padding: 1rem;
-  font-size: 1.2rem;
-  background-color: var(--primary-button-bg);
-  color: var(--primary-button-text);
-  margin-top: 1.5rem;
-  border: none;
-}
-.send-order-button:hover {
-  background-color: var(--primary-button-hover-bg);
-}
-.send-order-button:disabled {
-  background-color: var(--button-bg);
-  color: var(--secondary-text);
-  cursor: not-allowed;
-}
-
-.status-card-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.status-card {
-    padding: 1rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px var(--shadow-color);
-    border-left: 5px solid;
-}
-.status-card.sending { border-color: #888; }
-.status-card.pending { border-color: #fbbc05; }
-.status-card.acknowledged { border-color: #34a853; background-color: var(--success-bg); color: var(--success-text); }
-.status-card.rejected { border-color: #ea4335; background-color: var(--error-bg); color: var(--error-text); }
-.status-card h4 { margin: 0; }
-.status-card ul { list-style: none; padding: 0; margin: 8px 0 0; font-size: 0.9em; }
-
-.order-display { margin-top: 2rem; }
-.order-card {
-  padding: 1.5rem;
-  background-color: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: 0 4px 8px var(--shadow-color);
-  text-align: center;
-}
-.order-card ul { list-style: none; padding: 0; margin: 1rem 0; }
-.order-card li {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border-color);
-}
-.order-card li:last-child { border-bottom: none; }
-.order-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
-.order-actions button { flex: 1; padding: 0.8rem; font-size: 1rem; }
-.acknowledge-button { background-color: var(--primary-button-bg); color: var(--primary-button-text); border: none; }
-.acknowledge-button:hover { background-color: var(--primary-button-hover-bg); }
-.reject-button { background-color: var(--reject-button-bg); color: var(--reject-button-text); border: 1px solid var(--reject-button-text); }
-.reject-button:hover { background-color: var(--reject-button-hover-bg); }
-.waiting-text { text-align: center; color: var(--secondary-text); font-style: italic; padding: 2rem; }
-
+/* --- Sections --- */
 .presets-section, .custom-order-section {
     background-color: var(--card-bg);
     padding: 1.5rem;
@@ -190,138 +46,72 @@
     padding-bottom: 0.5rem;
     margin-bottom: 1rem;
 }
+
+/* --- Status Cards --- */
+.status-card-container { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; }
+.status-card { padding: 1rem; border-radius: 12px; box-shadow: 0 2px 4px var(--shadow-color); border-left: 5px solid; }
+.status-card.sending { border-color: #888; }
+.status-card.pending { border-color: #fbbc05; }
+.status-card.acknowledged { border-color: #34a853; background-color: var(--success-bg); color: var(--success-text); }
+.status-card.rejected { border-color: #ea4335; background-color: var(--error-bg); color: var(--error-text); }
+.status-card h4 { margin: 0; }
+.status-card ul { list-style: none; padding: 0; margin: 8px 0 0; font-size: 0.9em; }
+
+/* --- Presets --- */
 .preset-category { margin-bottom: 1rem; }
 .preset-category h5 { margin: 0 0 0.5rem 0; color: var(--secondary-text); font-size: 0.9em; text-transform: uppercase; }
 .no-presets-text { color: var(--secondary-text); font-style: italic; text-align: center; }
-
-.preset-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 0.75rem;
-}
-.preset-card {
-    background-color: var(--card-bg);
-    padding: 1rem;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
+.preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+.preset-card { background-color: var(--card-bg); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; }
 .preset-name { font-weight: 600; margin-bottom: 1rem; }
 .preset-card-actions { display: flex; gap: 0.5rem; }
 .preset-action-btn { flex: 1; padding: 0.5rem; font-size: 0.8rem; border-radius: 8px; }
 .preset-action-btn.send { background-color: var(--primary-button-bg); color: var(--primary-button-text); border: none; }
 
+/* --- Quick Request --- */
 .quick-request-builder { display: flex; flex-direction: column; gap: 1.5rem; }
-.available-items h4, .current-request h4 { margin-top: 0; margin-bottom: 0.75rem; color: var(--secondary-text); font-size: 0.9rem; }
+.available-items h4, .current-request h4 { margin-top: 0; color: var(--secondary-text); font-size: 0.9rem; }
+.available-items-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+.available-items-header h4 { margin: 0; }
+.add-custom-item-btn { font-size: 0.8rem; padding: 4px 10px; background-color: var(--button-bg); border: 1px solid var(--border-color); }
 .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; }
-.add-item-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 0.5rem;
-    background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
-}
+.add-item-card { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 1rem 0.5rem; background-color: var(--card-bg); border: 1px solid var(--border-color); width: 100%; }
+.add-item-card .item-icon { font-size: 1.5rem; }
 .request-list { display: flex; flex-direction: column; gap: 0.5rem; }
 .no-items-text { text-align: center; color: var(--secondary-text); font-style: italic; padding: 1rem; background-color: var(--secondary-bg); border-radius: 8px; }
+.menu-item { display: flex; align-items: center; justify-content: space-between; padding: 1rem; background-color: var(--card-bg); border-radius: 12px; }
+.item-name { font-weight: 500; flex-grow: 1; }
+.item-controls { display: flex; align-items: center; gap: 0.75rem; }
+.quantity-selector { display: flex; align-items: center; gap: 1rem; }
+.quantity-selector button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--button-bg); color: var(--button-text); font-size: 1.2rem; display: flex; align-items: center; justify-content: center; padding: 0; }
+.send-order-button { width: 100%; padding: 1rem; font-size: 1.2rem; background-color: var(--primary-button-bg); color: var(--primary-button-text); margin-top: 1.5rem; border: none; }
+.send-order-button:disabled { background-color: var(--button-bg); color: var(--secondary-text); cursor: not-allowed; }
 
-.available-items-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-.available-items-header h4 {
-  margin: 0;
-}
-.add-custom-item-btn {
-  font-size: 0.8rem;
-  padding: 4px 10px;
-  background-color: var(--button-bg);
-  border: 1px solid var(--border-color);
-}
+/* --- Save/Delete Custom Item Buttons --- */
+.add-item-card-wrapper { position: relative; }
+.delete-saved-item-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--card-bg); color: var(--secondary-text); font-size: 0.8rem; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; opacity: 0.7; }
+.delete-saved-item-btn:hover { opacity: 1; background-color: var(--error-bg); color: var(--error-text); }
+.save-quick-item-btn { width: 24px; height: 24px; border-radius: 50%; border: 1px dashed var(--border-color); background-color: transparent; color: var(--secondary-text); font-size: 1.2rem; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
+.save-quick-item-btn:hover { background-color: var(--success-bg); color: var(--success-text); border-style: solid; }
 
-/* --- STEP 1: CSS Fix for Overlapping Button --- */
-.quick-request-item {
-  padding-right: 0; /* Remove previous padding */
-}
-.item-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem; /* Space between quantity selector and delete button */
-}
-.delete-quick-item-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: none;
-  background-color: var(--secondary-bg);
-  color: var(--secondary-text);
-  font-size: 1rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  opacity: 0.5;
-  transition: opacity 0.2s;
-}
-.quick-request-item:hover .delete-quick-item-btn {
-  opacity: 1;
-}
+/* --- Custom Item Modal --- */
+.modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background-color: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); width: 90%; max-width: 400px; }
+.modal-content h3 { margin-top: 0; text-align: center; }
+.modal-content form { display: flex; flex-direction: column; gap: 1rem; }
+.modal-content input { width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--primary-bg); color: var(--primary-text); box-sizing: border-box; }
+.modal-actions { display: flex; gap: 1rem; margin-top: 1rem; }
+.modal-actions button { flex: 1; }
+.modal-actions button[type="submit"] { background-color: var(--primary-button-bg); color: var(--primary-button-text); border: none; }
 
-/* --- STEP 2: Styles for the new Custom Item Modal --- */
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-.modal-content {
-  background-color: var(--card-bg);
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 400px;
-}
-.modal-content h3 {
-  margin-top: 0;
-  text-align: center;
-}
-.modal-content form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.modal-content input {
-  width: 100%;
-  padding: 0.8rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: var(--primary-bg);
-  color: var(--primary-text);
-  box-sizing: border-box;
-}
-.modal-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-.modal-actions button {
-  flex: 1;
-}
-.modal-actions button[type="submit"] {
-  background-color: var(--primary-button-bg);
-  color: var(--primary-button-text);
-  border: none;
-}
+/* --- Receiver View --- */
+.order-display { margin-top: 2rem; }
+.order-card { padding: 1.5rem; background-color: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 8px var(--shadow-color); text-align: center; }
+.order-card ul { list-style: none; padding: 0; margin: 1rem 0; }
+.order-card li { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color); }
+.order-card li:last-child { border-bottom: none; }
+.order-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+.order-actions button { flex: 1; padding: 0.8rem; font-size: 1rem; }
+.acknowledge-button { background-color: var(--primary-button-bg); color: var(--primary-button-text); border: none; }
+.reject-button { background-color: var(--reject-button-bg); color: var(--reject-button-text); border: 1px solid var(--reject-button-text); }
+.waiting-text { text-align: center; color: var(--secondary-text); font-style: italic; padding: 2rem; }
