@@ -115,3 +115,101 @@
 .acknowledge-button { background-color: var(--primary-button-bg); color: var(--primary-button-text); border: none; }
 .reject-button { background-color: var(--reject-button-bg); color: var(--reject-button-text); border: 1px solid var(--reject-button-text); }
 .waiting-text { text-align: center; color: var(--secondary-text); font-style: italic; padding: 2rem; }
+
+/* --- Receiver View --- */
+.order-display { margin-top: 2rem; }
+.order-card { padding: 1.5rem; background-color: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 8px var(--shadow-color); text-align: center; }
+.order-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+.order-actions button { flex: 1; padding: 0.8rem; font-size: 1rem; }
+.acknowledge-button { background-color: var(--primary-button-bg); color: var(--primary-button-text); border: none; }
+.reject-button { background-color: var(--reject-button-bg); color: var(--reject-button-text); border: 1px solid var(--reject-button-text); }
+.waiting-text { text-align: center; color: var(--secondary-text); font-style: italic; padding: 2rem; }
+
+/* --- STEP 1 & 2: NEW Styles for Interactive Receiver Item List --- */
+.receiver-item-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.receiver-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+.receiver-item:last-child {
+  border-bottom: none;
+}
+
+.receiver-item-name {
+  font-weight: 500;
+}
+
+.receiver-item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.item-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.item-action-btn.reject {
+  background-color: var(--reject-button-bg);
+  color: var(--reject-button-text);
+}
+.item-action-btn.reject:hover {
+  background-color: var(--reject-button-hover-bg);
+}
+
+.item-action-btn.acknowledge {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+}
+.item-action-btn.acknowledge:hover {
+  background-color: #d1f0d9; /* A slightly darker green on hover */
+}
+
+/* Styles for items after an action has been taken */
+.receiver-item.acknowledged,
+.receiver-item.rejected {
+  opacity: 0.5;
+  color: var(--secondary-text);
+}
+.receiver-item.acknowledged .receiver-item-name,
+.receiver-item.rejected .receiver-item-name {
+  text-decoration: line-through;
+}
+.receiver-item.acknowledged .item-action-btn,
+.receiver-item.rejected .item-action-btn {
+  pointer-events: none; /* Disable buttons after action */
+}
+
+
+/* --- STEP 3: NEW Styles for Sender Feedback Log --- */
+.item-feedback-log {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+}
+.item-feedback-log p {
+  margin: 0 0 4px;
+  font-size: 0.85em;
+  color: var(--secondary-text);
+  font-style: italic;
+}

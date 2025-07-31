@@ -130,13 +130,39 @@ function SenderView({ onEditPreset }) {
       setSentOrders(p => p.map(o => (o._id === id ? { ...o, status: 'rejected' } : o)));
       setTimeout(() => setSentOrders(p => p.filter(o => o._id !== id)), 8000);
     };
+
+      // --- STEP 3: Listen for new individual item feedback events ---
+    const handleItemAcknowledged = ({ orderId, itemName, receiverName }) => {
+      setSentOrders(prev => prev.map(o => {
+        if (o._id === orderId) {
+          const feedback = `${receiverName} acknowledged ${itemName}.`;
+          return { ...o, itemFeedback: [...(o.itemFeedback || []), feedback] };
+        }
+        return o;
+      }));
+    };
+    const handleItemRejected = ({ orderId, itemName, receiverName }) => {
+      setSentOrders(prev => prev.map(o => {
+        if (o._id === orderId) {
+          const feedback = `${receiverName} rejected ${itemName}.`;
+          return { ...o, itemFeedback: [...(o.itemFeedback || []), feedback] };
+        }
+        return o;
+      }));
+    };
+
     socket.on('order_saved', handleOrderSaved);
     socket.on('order_acknowledged', handleOrderAcknowledged);
     socket.on('order_rejected', handleOrderRejected);
+    socket.on('sender_item_acknowledged', handleItemAcknowledged);
+    socket.on('sender_item_rejected', handleItemRejected);
+    
     return () => {
       socket.off('order_saved', handleOrderSaved);
       socket.off('order_acknowledged', handleOrderAcknowledged);
       socket.off('order_rejected', handleOrderRejected);
+      socket.off('sender_item_acknowledged', handleItemAcknowledged);
+      socket.off('sender_item_rejected', handleItemRejected);
     };
   }, [user]);
 
@@ -233,6 +259,14 @@ function SenderView({ onEditPreset }) {
             {ord.status !== 'rejected' && (
                 <ul>{Object.entries(ord.items).map(([name, qty]) => <li key={name}>{MENU_ITEMS.find(i => i.id == name)?.name || name} (x{qty})</li>)}</ul>
             )}
+             {/* --- STEP 3: Display individual item feedback --- */}
+             {ord.itemFeedback && ord.itemFeedback.length > 0 && (
+              <div className="item-feedback-log">
+                {ord.itemFeedback.map((msg, index) => (
+                  <p key={index}>{msg}</p>
+                ))}
+              </div>
+            )}
           </div>))}
       </div>
 
@@ -321,7 +355,9 @@ function SenderView({ onEditPreset }) {
 function ReceiverView() {
   const { user, token } = useContext(AuthContext);
   const [activeOrder, setActiveOrder] = useState(null);
-
+    // --- STEP 1: State to track individual item statuses for UI feedback ---
+  const [itemStatuses, setItemStatuses] = useState({});
+  
   useEffect(() => {
     async function fetchPendingOrder() {
       if (!token) return;
@@ -331,10 +367,38 @@ function ReceiverView() {
       } catch (error) { console.error("Failed to fetch pending orders:", error); }
     }
     fetchPendingOrder();
-    const handleReceiveOrder = (orderData) => setActiveOrder(orderData);
+    const handleReceiveOrder = (orderData) => {
+      setActiveOrder(orderData);
+      setItemStatuses({}); // Reset item statuses for the new order
+    };
     socket.on('receive_order', handleReceiveOrder);
     return () => socket.off('receive_order', handleReceiveOrder);
   }, [token]);
+
+    // --- STEP 1 & 2: Handlers for individual item actions ---
+  const handleItemAcknowledge = (itemName) => {
+    if (activeOrder) {
+      socket.emit('item_acknowledged', {
+        orderId: activeOrder._id,
+        itemName: itemName,
+        receiverId: user._id
+      });
+      // Give instant visual feedback
+      setItemStatuses(prev => ({ ...prev, [itemName]: 'acknowledged' }));
+    }
+  };
+
+  const handleItemReject = (itemName) => {
+    if (activeOrder) {
+      socket.emit('item_rejected', {
+        orderId: activeOrder._id,
+        itemName: itemName,
+        receiverId: user._id
+      });
+      // Give instant visual feedback
+      setItemStatuses(prev => ({ ...prev, [itemName]: 'rejected' }));
+    }
+  };
 
   const handleAcknowledge = () => {
     if (activeOrder) {
@@ -355,6 +419,19 @@ function ReceiverView() {
       <div className="order-display">{activeOrder ? (
           <div className="order-card animate-fade-in">
             <h3>New Order Received!</h3>
+              {/* --- STEP 1 & 2: Updated item list with individual action buttons --- */}
+             <ul className="receiver-item-list">
+              {Object.entries(activeOrder.items).map(([name, quantity]) => (
+                <li key={name} className={`receiver-item ${itemStatuses[name] || ''}`}>
+                  <span className="receiver-item-name">{name} (x{quantity})</span>
+                  <div className="receiver-item-actions">
+                    <button onClick={() => handleItemReject(name)} className="item-action-btn reject">✗</button>
+                    <button onClick={() => handleItemAcknowledge(name)} className="item-action-btn acknowledge">✓</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
             <ul>{Object.entries(activeOrder.items).map(([name, quantity]) => (
                 <li key={name}><span>{name}</span><span className="order-quantity">x {quantity}</span></li>
               ))}</ul>

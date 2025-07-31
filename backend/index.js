@@ -361,6 +361,50 @@ io.on("connection", (socket) => {
     }
   });
 
+   // --- NEW: Event handlers for individual item feedback ---
+
+  // Listen for when a Receiver acknowledges a single item
+  socket.on("item_acknowledged", async ({ orderId, itemName, receiverId }) => {
+    try {
+      const receiver = await User.findById(receiverId);
+      const order = await Order.findById(orderId);
+      if (!order || !receiver) return;
+
+      const senderSocketId = userSockets[order.senderId.toString()];
+      if (senderSocketId) {
+        // Emit a new event specifically for this action back to the Sender
+        io.to(senderSocketId).emit("sender_item_acknowledged", {
+          orderId,
+          itemName,
+          receiverName: receiver.displayName,
+        });
+      }
+    } catch (error) {
+      console.error("Error relaying item acknowledgment:", error);
+    }
+  });
+
+  // Listen for when a Receiver rejects a single item
+  socket.on("item_rejected", async ({ orderId, itemName, receiverId }) => {
+    try {
+      const receiver = await User.findById(receiverId);
+      const order = await Order.findById(orderId);
+      if (!order || !receiver) return;
+
+      const senderSocketId = userSockets[order.senderId.toString()];
+      if (senderSocketId) {
+        // Emit a new event specifically for this action back to the Sender
+        io.to(senderSocketId).emit("sender_item_rejected", {
+          orderId,
+          itemName,
+          receiverName: receiver.displayName,
+        });
+      }
+    } catch (error) {
+      console.error("Error relaying item rejection:", error);
+    }
+  });
+
   socket.on("disconnect", () => {
     for (const userId in userSockets) {
       if (userSockets[userId] === socket.id) {
