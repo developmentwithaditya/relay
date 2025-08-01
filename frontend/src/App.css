@@ -1,6 +1,8 @@
-/* frontend/src/App.css */
+/* frontend/src/App.css - Optimized and Organized */
 
-/* --- Base & Layout --- */
+/* =============================================================================
+   BASE & LAYOUT
+   ============================================================================= */
 .app-container {
   max-width: 500px;
   margin: 0 auto;
@@ -9,7 +11,9 @@
   min-height: 100vh;
 }
 
-/* --- Header --- */
+/* =============================================================================
+   HEADER COMPONENTS
+   ============================================================================= */
 .app-header-main {
   display: flex;
   justify-content: space-between;
@@ -21,314 +25,227 @@
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 4px var(--shadow-color);
 }
-.profile-section { display: flex; align-items: center; gap: 10px; font-weight: 600; }
-.header-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color); }
-.header-actions { display: flex; gap: 10px; align-items: center; }
-.theme-toggle-button { background-color: transparent; border: 1px solid var(--border-color); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; padding: 0; }
-.logout-button, .edit-profile-button, .manage-presets-button { background-color: var(--button-bg); color: var(--button-text); padding: 8px 12px; }
 
-/* --- General View Headers --- */
-.app-header { text-align: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
-.app-header h1 { margin: 0; font-size: 1.8rem; }
-.app-header p { margin: 0.25rem 0 0; color: var(--secondary-text); }
-
-/* --- Sections --- */
-.presets-section, .custom-order-section {
-    background-color: var(--card-bg);
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin-top: 2rem;
-    box-shadow: 0 2px 8px var(--shadow-color);
-}
-.presets-section h3, .custom-order-section h3 {
-    margin-top: 0;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
+.profile-section { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  font-weight: 600; 
 }
 
-/* --- Status Cards --- */
-.status-card-container { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; }
-.status-card { padding: 1rem; border-radius: 12px; box-shadow: 0 2px 4px var(--shadow-color); border-left: 5px solid; }
+.header-avatar { 
+  width: 40px; 
+  height: 40px; 
+  border-radius: 50%; 
+  object-fit: cover; 
+  border: 2px solid var(--border-color); 
+}
+
+.header-actions { 
+  display: flex; 
+  gap: 10px; 
+  align-items: center; 
+}
+
+.theme-toggle-button { 
+  background-color: transparent; 
+  border: 1px solid var(--border-color); 
+  width: 40px; 
+  height: 40px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-size: 1.2rem; 
+  padding: 0; 
+}
+
+.logout-button, 
+.edit-profile-button, 
+.manage-presets-button { 
+  background-color: var(--button-bg); 
+  color: var(--button-text); 
+  padding: 8px 12px; 
+}
+
+/* View-specific headers */
+.app-header { 
+  text-align: center; 
+  margin-bottom: 1.5rem; 
+  border-bottom: 1px solid var(--border-color); 
+  padding-bottom: 1rem; 
+}
+
+.app-header h1 { 
+  margin: 0; 
+  font-size: 1.8rem; 
+}
+
+.app-header p { 
+  margin: 0.25rem 0 0; 
+  color: var(--secondary-text); 
+}
+
+/* =============================================================================
+   MAIN SECTIONS
+   ============================================================================= */
+.presets-section, 
+.custom-order-section {
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-top: 2rem;
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.presets-section h3, 
+.custom-order-section h3 {
+  margin-top: 0;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* =============================================================================
+   STATUS CARDS (SENDER VIEW)
+   ============================================================================= */
+.status-card-container { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1rem; 
+  margin-bottom: 1rem; 
+}
+
+.status-card { 
+  padding: 1rem; 
+  border-radius: 12px; 
+  box-shadow: 0 2px 4px var(--shadow-color); 
+  border-left: 5px solid;
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.status-card:hover {
+  box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+/* Status card variants */
 .status-card.sending { border-color: #888; }
 .status-card.pending { border-color: #fbbc05; }
-.status-card.acknowledged { border-color: #34a853; background-color: var(--success-bg); color: var(--success-text); }
-.status-card.rejected { border-color: #ea4335; background-color: var(--error-bg); color: var(--error-text); }
-.status-card h4 { margin: 0; }
-.status-card ul { list-style: none; padding: 0; margin: 8px 0 0; font-size: 0.9em; }
+.status-card.acknowledged { 
+  border-color: #34a853; 
+  background-color: var(--success-bg); 
+  color: var(--success-text); 
+}
+.status-card.rejected { 
+  border-color: #ea4335; 
+  background-color: var(--error-bg); 
+  color: var(--error-text); 
+}
 
-/* --- Presets --- */
-.preset-category { margin-bottom: 1rem; }
-.preset-category h5 { margin: 0 0 0.5rem 0; color: var(--secondary-text); font-size: 0.9em; text-transform: uppercase; }
-.no-presets-text { color: var(--secondary-text); font-style: italic; text-align: center; }
-.preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
-.preset-card { background-color: var(--card-bg); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; }
-.preset-name { font-weight: 600; margin-bottom: 1rem; }
-.preset-card-actions { display: flex; gap: 0.5rem; }
-.preset-action-btn { flex: 1; padding: 0.5rem; font-size: 0.8rem; border-radius: 8px; }
-.preset-action-btn.send { background-color: var(--primary-button-bg); color: var(--primary-button-text); border: none; }
+.status-card h4 { 
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
 
-/* --- Quick Request --- */
-.quick-request-builder { display: flex; flex-direction: column; gap: 1.5rem; }
-.available-items h4, .current-request h4 { margin-top: 0; color: var(--secondary-text); font-size: 0.9rem; }
-.available-items-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-.available-items-header h4 { margin: 0; }
-.add-custom-item-btn { font-size: 0.8rem; padding: 4px 10px; background-color: var(--button-bg); border: 1px solid var(--border-color); }
-.item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; }
-.add-item-card { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 1rem 0.5rem; background-color: var(--card-bg); border: 1px solid var(--border-color); width: 100%; }
-.add-item-card .item-icon { font-size: 1.5rem; }
-.request-list { display: flex; flex-direction: column; gap: 0.5rem; }
-.no-items-text { text-align: center; color: var(--secondary-text); font-style: italic; padding: 1rem; background-color: var(--secondary-bg); border-radius: 8px; }
-.menu-item { display: flex; align-items: center; justify-content: space-between; padding: 1rem; background-color: var(--card-bg); border-radius: 12px; }
-.item-name { font-weight: 500; flex-grow: 1; }
-.item-controls { display: flex; align-items: center; gap: 0.75rem; }
-.quantity-selector { display: flex; align-items: center; gap: 1rem; }
-.quantity-selector button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--button-bg); color: var(--button-text); font-size: 1.2rem; display: flex; align-items: center; justify-content: center; padding: 0; }
-.send-order-button { width: 100%; padding: 1rem; font-size: 1.2rem; background-color: var(--primary-button-bg); color: var(--primary-button-text); margin-top: 1.5rem; border: none; }
-.send-order-button:disabled { background-color: var(--button-bg); color: var(--secondary-text); cursor: not-allowed; }
+[data-theme="dark"] .status-card h4 {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
 
-/* --- Save/Delete Custom Item Buttons --- */
-.add-item-card-wrapper { position: relative; }
-.delete-saved-item-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--card-bg); color: var(--secondary-text); font-size: 0.8rem; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; opacity: 0.7; }
-.delete-saved-item-btn:hover { opacity: 1; background-color: var(--error-bg); color: var(--error-text); }
-.save-quick-item-btn { width: 24px; height: 24px; border-radius: 50%; border: 1px dashed var(--border-color); background-color: transparent; color: var(--secondary-text); font-size: 1.2rem; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
-.save-quick-item-btn:hover { background-color: var(--success-bg); color: var(--success-text); border-style: solid; }
-
-/* --- Custom Item Modal --- */
-.modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-content { background-color: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); width: 90%; max-width: 400px; }
-.modal-content h3 { margin-top: 0; text-align: center; }
-.modal-content form { display: flex; flex-direction: column; gap: 1rem; }
-.modal-content input { width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--primary-bg); color: var(--primary-text); box-sizing: border-box; }
-.modal-actions { display: flex; gap: 1rem; margin-top: 1rem; }
-.modal-actions button { flex: 1; }
-.modal-actions button[type="submit"] { background-color: var(--primary-button-bg); color: var(--primary-button-text); border: none; }
-
-/* --- Receiver View --- */
-.order-display { margin-top: 2rem; }
-.order-card { padding: 1.5rem; background-color: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 8px var(--shadow-color); text-align: center; }
-.order-card ul { list-style: none; padding: 0; margin: 1rem 0; }
-.order-card li { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color); }
-.order-card li:last-child { border-bottom: none; }
-.order-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
-.order-actions button { flex: 1; padding: 0.8rem; font-size: 1rem; }
-.acknowledge-button { background-color: var(--primary-button-bg); color: var(--primary-button-text); border: none; }
-.reject-button { background-color: var(--reject-button-bg); color: var(--reject-button-text); border: 1px solid var(--reject-button-text); }
-.waiting-text { text-align: center; color: var(--secondary-text); font-style: italic; padding: 2rem; }
-
-/* --- Receiver View --- */
-.order-display { margin-top: 2rem; }
-.order-card { padding: 1.5rem; background-color: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 8px var(--shadow-color); text-align: center; }
-.order-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
-.order-actions button { flex: 1; padding: 0.8rem; font-size: 1rem; }
-.acknowledge-button { background-color: var(--primary-button-bg); color: var(--primary-button-text); border: none; }
-.reject-button { background-color: var(--reject-button-bg); color: var(--reject-button-text); border: 1px solid var(--reject-button-text); }
-.waiting-text { text-align: center; color: var(--secondary-text); font-style: italic; padding: 2rem; }
-
-/* --- STEP 1 & 2: NEW Styles for Interactive Receiver Item List --- */
+/* =============================================================================
+   ITEM LISTS (SENDER & RECEIVER)
+   ============================================================================= */
+.sender-item-list,
 .receiver-item-list {
   list-style: none;
   padding: 0;
-  margin: 1.5rem 0;
+  margin: 1rem 0;
   text-align: left;
 }
 
+/* Common item styles */
+.sender-item,
 .receiver-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
+  padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border-color);
-  transition: opacity 0.3s ease, color 0.3s ease;
-}
-.receiver-item:last-child {
-  border-bottom: none;
-}
-
-.receiver-item-name {
-  font-weight: 500;
-}
-
-.receiver-item-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.item-action-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  font-size: 1rem;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.item-action-btn.reject {
-  background-color: var(--reject-button-bg);
-  color: var(--reject-button-text);
-}
-.item-action-btn.reject:hover {
-  background-color: var(--reject-button-hover-bg);
-}
-
-.item-action-btn.acknowledge {
-  background-color: var(--success-bg);
-  color: var(--success-text);
-}
-.item-action-btn.acknowledge:hover {
-  background-color: #d1f0d9; /* A slightly darker green on hover */
-}
-
-/* Styles for items after an action has been taken */
-.receiver-item.acknowledged,
-.receiver-item.rejected {
-  opacity: 0.5;
-  color: var(--secondary-text);
-}
-.receiver-item.acknowledged .receiver-item-name,
-.receiver-item.rejected .receiver-item-name {
-  text-decoration: line-through;
-}
-.receiver-item.acknowledged .item-action-btn,
-.receiver-item.rejected .item-action-btn {
-  pointer-events: none; /* Disable buttons after action */
-}
-
-
-/* --- STEP 3: NEW Styles for Sender Feedback Log --- */
-.item-feedback-log {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px dashed var(--border-color);
-}
-.item-feedback-log p {
-  margin: 0 0 4px;
-  font-size: 0.85em;
-  color: var(--secondary-text);
-  font-style: italic;
-}
-/* --- Sender Cooldown Banner --- */
-.cooldown-banner {
-  background-color: var(--error-bg);
-  color: var(--error-text);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: 500;
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--error-text);
-}
-
-/* --- Receiver Order List --- */
-.order-list-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem; /* Space between order cards */
-}
-
-/* --- Timestamp inside Order Card --- */
-.order-timestamp {
-  font-size: 0.8rem;
-  color: var(--secondary-text);
-  text-align: right;
-  margin-bottom: 0.75rem;
-  font-style: italic;
-}
-
-/* --- Existing .order-card styles will apply --- */
-/* You might want to adjust them if needed */
-.order-card {
-  padding: 1.5rem;
-  background-color: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: 0 4px 8px var(--shadow-color);
-  /* removed text-align: center to allow for more complex layout */
-}
-
-.order-card h3 {
-  text-align: center;
-  margin-top: 0;
-}
-
-/* Ensure buttons are not disabled visually when they are active */
-.send-order-button:disabled,
-.preset-action-btn.send:disabled {
-    background-color: #999; /* A more distinct disabled color */
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-/* --- ENHANCED: Styles for Interactive Receiver Item List --- */
-.receiver-item-list {
-  list-style: none;
-  padding: 0;
-  margin: 1.5rem 0;
-  text-align: left;
-}
-
-.receiver-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border-color);
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
   transition: all 0.3s ease;
   background-color: var(--card-bg);
 }
 
-.receiver-item:last-child {
+/* Receiver items have more padding and spacing */
+.receiver-item {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+}
+
+.receiver-item:last-child,
+.sender-item:last-child {
   border-bottom: 1px solid var(--border-color);
 }
 
-/* **NEW**: Background colors for acknowledged/rejected items */
+/* Item name styling */
+.sender-item-name,
+.receiver-item-name {
+  font-weight: 500;
+  flex-grow: 1;
+}
+
+/* Status-based item styling */
+.sender-item.acknowledged,
 .receiver-item.acknowledged {
-  background-color: #d4f8d4; /* Light green background */
+  background-color: #d4f8d4;
   border-color: #4caf50;
   color: #2e7d32;
 }
 
+.sender-item.rejected,
 .receiver-item.rejected {
-  background-color: #ffebee; /* Light red background */
+  background-color: #ffebee;
   border-color: #f44336;
   color: #c62828;
 }
 
 /* Dark theme variants */
+[data-theme="dark"] .sender-item.acknowledged,
 [data-theme="dark"] .receiver-item.acknowledged {
   background-color: #1b4332;
   border-color: #4caf50;
   color: #a5d6a7;
 }
 
+[data-theme="dark"] .sender-item.rejected,
 [data-theme="dark"] .receiver-item.rejected {
   background-color: #4a1c1c;
   border-color: #f44336;
   color: #ef9a9a;
 }
 
-.receiver-item-name {
-  font-weight: 500;
-  flex-grow: 1;
-}
-
-/* **ENHANCED**: Strike-through for acted upon items */
+/* Strike-through for acted upon items */
+.sender-item.acknowledged .sender-item-name,
+.sender-item.rejected .sender-item-name,
 .receiver-item.acknowledged .receiver-item-name,
 .receiver-item.rejected .receiver-item-name {
   text-decoration: line-through;
   opacity: 0.8;
 }
 
+/* =============================================================================
+   ITEM ACTION BUTTONS & STATUS INDICATORS
+   ============================================================================= */
 .receiver-item-actions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+}
+
+.sender-item-status {
+  display: flex;
   align-items: center;
 }
 
@@ -351,6 +268,7 @@
   background-color: var(--reject-button-bg);
   color: var(--reject-button-text);
 }
+
 .item-action-btn.reject:hover {
   background-color: #f44336;
   color: white;
@@ -361,202 +279,14 @@
   background-color: var(--success-bg);
   color: var(--success-text);
 }
+
 .item-action-btn.acknowledge:hover {
   background-color: #4caf50;
   color: white;
   transform: scale(1.1);
 }
 
-/* **NEW**: Status indicators */
-.status-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 1rem;
-  font-weight: bold;
-  animation: statusAppear 0.3s ease-in;
-}
-
-.status-indicator.acknowledged {
-  background-color: #4caf50;
-  color: white;
-}
-
-.status-indicator.rejected {
-  background-color: #f44336;
-  color: white;
-}
-
-@keyframes statusAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* **ENHANCED**: Sender feedback styles */
-.item-feedback-log {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px dashed var(--border-color);
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-[data-theme="dark"] .item-feedback-log {
-  background-color: rgba(255, 255, 255, 0.02);
-}
-
-.item-feedback-log p {
-  margin: 0 0 0.5rem;
-  font-size: 0.85em;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-}
-
-/* **NEW**: Different colors for acknowledged vs rejected feedback */
-.item-feedback-log p:contains("acknowledged") {
-  color: #2e7d32;
-  background-color: rgba(76, 175, 80, 0.1);
-}
-
-.item-feedback-log p:contains("rejected") {
-  color: #c62828;
-  background-color: rgba(244, 67, 54, 0.1);
-}
-
-[data-theme="dark"] .item-feedback-log p:contains("acknowledged") {
-  color: #a5d6a7;
-}
-
-[data-theme="dark"] .item-feedback-log p:contains("rejected") {
-  color: #ef9a9a;
-}
-
-/* **NEW**: Sender Item List Styles (similar to receiver) */
-.sender-item-list {
-  list-style: none;
-  padding: 0;
-  margin: 1rem 0;
-  text-align: left;
-}
-
-.sender-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-  border-radius: 6px;
-  margin-bottom: 0.25rem;
-  transition: all 0.3s ease;
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.sender-item:last-child {
-  border-bottom: 1px solid var(--border-color);
-}
-
-/* **NEW**: Background colors for acknowledged/rejected items on sender side */
-.sender-item.acknowledged {
-  background-color: #d4f8d4; /* Light green background */
-  border-color: #4caf50;
-  color: #2e7d32;
-}
-
-.sender-item.rejected {
-  background-color: #ffebee; /* Light red background */
-  border-color: #f44336;
-  color: #c62828;
-}
-
-/* Dark theme variants for sender items */
-[data-theme="dark"] .sender-item.acknowledged {
-  background-color: #1b4332;
-  border-color: #4caf50;
-  color: #a5d6a7;
-}
-
-[data-theme="dark"] .sender-item.rejected {
-  background-color: #4a1c1c;
-  border-color: #f44336;
-  color: #ef9a9a;
-}
-
-.sender-item-name {
-  font-weight: 500;
-  flex-grow: 1;
-}
-
-/* **NEW**: Strike-through for acted upon items on sender side */
-.sender-item.acknowledged .sender-item-name,
-.sender-item.rejected .sender-item-name {
-  text-decoration: line-through;
-  opacity: 0.8;
-}
-
-.sender-item-status {
-  display: flex;
-  align-items: center;
-}
-
-/* **ENHANCED**: Better feedback styling for different message types */
-.item-feedback-log p {
-  margin: 0 0 0.5rem;
-  font-size: 0.85em;
-  padding: 0.35rem 0.75rem;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-  border-left: 3px solid transparent;
-}
-
-/* **NEW**: Style feedback messages based on content */
-.item-feedback-log p {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-[data-theme="dark"] .item-feedback-log p {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* Target messages containing "acknowledged" */
-.item-feedback-log p:has-text("acknowledged"),
-.item-feedback-log p[data-type="acknowledged"] {
-  color: #2e7d32;
-  background-color: rgba(76, 175, 80, 0.15);
-  border-left-color: #4caf50;
-}
-
-/* Target messages containing "rejected" */
-.item-feedback-log p:has-text("rejected"),
-.item-feedback-log p[data-type="rejected"] {
-  color: #c62828;
-  background-color: rgba(244, 67, 54, 0.15);
-  border-left-color: #f44336;
-}
-
-[data-theme="dark"] .item-feedback-log p:has-text("acknowledged"),
-[data-theme="dark"] .item-feedback-log p[data-type="acknowledged"] {
-  color: #a5d6a7;
-  background-color: rgba(76, 175, 80, 0.2);
-}
-
-[data-theme="dark"] .item-feedback-log p:has-text("rejected"),
-[data-theme="dark"] .item-feedback-log p[data-type="rejected"] {
-  color: #ef9a9a;
-  background-color: rgba(244, 67, 54, 0.2);
-}
-
-/* **ENHANCED**: Status indicators (shared between sender and receiver) */
+/* Status indicators */
 .status-indicator {
   display: flex;
   align-items: center;
@@ -580,57 +310,403 @@
   color: white;
 }
 
-@keyframes statusAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.3) rotate(-180deg);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-  }
+/* =============================================================================
+   PRESETS SECTION
+   ============================================================================= */
+.preset-category { 
+  margin-bottom: 1rem; 
 }
 
-/* **ENHANCED**: Make status cards more compact when showing individual items */
-.status-card {
+.preset-category h5 { 
+  margin: 0 0 0.5rem 0; 
+  color: var(--secondary-text); 
+  font-size: 0.9em; 
+  text-transform: uppercase; 
+}
+
+.no-presets-text { 
+  color: var(--secondary-text); 
+  font-style: italic; 
+  text-align: center; 
+}
+
+.preset-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+  gap: 0.75rem; 
+}
+
+.preset-card { 
+  background-color: var(--card-bg); 
+  padding: 1rem; 
+  border-radius: 12px; 
+  border: 1px solid var(--border-color); 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between; 
+}
+
+.preset-name { 
+  font-weight: 600; 
+  margin-bottom: 1rem; 
+}
+
+.preset-card-actions { 
+  display: flex; 
+  gap: 0.5rem; 
+}
+
+.preset-action-btn { 
+  flex: 1; 
+  padding: 0.5rem; 
+  font-size: 0.8rem; 
+  border-radius: 8px; 
+}
+
+.preset-action-btn.send { 
+  background-color: var(--primary-button-bg); 
+  color: var(--primary-button-text); 
+  border: none; 
+}
+
+/* =============================================================================
+   QUICK REQUEST BUILDER
+   ============================================================================= */
+.quick-request-builder { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1.5rem; 
+}
+
+.available-items h4, 
+.current-request h4 { 
+  margin-top: 0; 
+  color: var(--secondary-text); 
+  font-size: 0.9rem; 
+}
+
+.available-items-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 0.75rem; 
+}
+
+.available-items-header h4 { 
+  margin: 0; 
+}
+
+.add-custom-item-btn { 
+  font-size: 0.8rem; 
+  padding: 4px 10px; 
+  background-color: var(--button-bg); 
+  border: 1px solid var(--border-color); 
+}
+
+.item-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+  gap: 0.5rem; 
+}
+
+.add-item-card { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  gap: 0.5rem; 
+  padding: 1rem 0.5rem; 
+  background-color: var(--card-bg); 
+  border: 1px solid var(--border-color); 
+  width: 100%; 
+}
+
+.add-item-card .item-icon { 
+  font-size: 1.5rem; 
+}
+
+.request-list { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.5rem; 
+}
+
+.no-items-text { 
+  text-align: center; 
+  color: var(--secondary-text); 
+  font-style: italic; 
+  padding: 1rem; 
+  background-color: var(--secondary-bg); 
+  border-radius: 8px; 
+}
+
+.menu-item { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  padding: 1rem; 
+  background-color: var(--card-bg); 
+  border-radius: 12px; 
+}
+
+.item-name { 
+  font-weight: 500; 
+  flex-grow: 1; 
+}
+
+.item-controls { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.75rem; 
+}
+
+.quantity-selector { 
+  display: flex; 
+  align-items: center; 
+  gap: 1rem; 
+}
+
+.quantity-selector button { 
+  width: 30px; 
+  height: 30px; 
+  border-radius: 50%; 
+  border: 1px solid var(--border-color); 
+  background-color: var(--button-bg); 
+  color: var(--button-text); 
+  font-size: 1.2rem; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  padding: 0; 
+}
+
+.send-order-button { 
+  width: 100%; 
+  padding: 1rem; 
+  font-size: 1.2rem; 
+  background-color: var(--primary-button-bg); 
+  color: var(--primary-button-text); 
+  margin-top: 1.5rem; 
+  border: none; 
+}
+
+.send-order-button:disabled,
+.preset-action-btn.send:disabled {
+  background-color: #999;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* =============================================================================
+   CUSTOM ITEM MANAGEMENT
+   ============================================================================= */
+.add-item-card-wrapper { 
+  position: relative; 
+}
+
+.delete-saved-item-btn { 
+  position: absolute; 
+  top: -5px; 
+  right: -5px; 
+  width: 20px; 
+  height: 20px; 
+  border-radius: 50%; 
+  border: 1px solid var(--border-color); 
+  background-color: var(--card-bg); 
+  color: var(--secondary-text); 
+  font-size: 0.8rem; 
+  line-height: 1; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  padding: 0; 
+  cursor: pointer; 
+  opacity: 0.7; 
+}
+
+.delete-saved-item-btn:hover { 
+  opacity: 1; 
+  background-color: var(--error-bg); 
+  color: var(--error-text); 
+}
+
+.save-quick-item-btn { 
+  width: 24px; 
+  height: 24px; 
+  border-radius: 50%; 
+  border: 1px dashed var(--border-color); 
+  background-color: transparent; 
+  color: var(--secondary-text); 
+  font-size: 1.2rem; 
+  line-height: 1; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  padding: 0; 
+  cursor: pointer; 
+}
+
+.save-quick-item-btn:hover { 
+  background-color: var(--success-bg); 
+  color: var(--success-text); 
+  border-style: solid; 
+}
+
+/* =============================================================================
+   MODAL COMPONENT
+   ============================================================================= */
+.modal-backdrop { 
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%; 
+  background-color: rgba(0, 0, 0, 0.6); 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  z-index: 1000; 
+}
+
+.modal-content { 
+  background-color: var(--card-bg); 
+  padding: 2rem; 
+  border-radius: 12px; 
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); 
+  width: 90%; 
+  max-width: 400px; 
+}
+
+.modal-content h3 { 
+  margin-top: 0; 
+  text-align: center; 
+}
+
+.modal-content form { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1rem; 
+}
+
+.modal-content input { 
+  width: 100%; 
+  padding: 0.8rem; 
+  border: 1px solid var(--border-color); 
+  border-radius: 8px; 
+  background-color: var(--primary-bg); 
+  color: var(--primary-text); 
+  box-sizing: border-box; 
+}
+
+.modal-actions { 
+  display: flex; 
+  gap: 1rem; 
+  margin-top: 1rem; 
+}
+
+.modal-actions button { 
+  flex: 1; 
+}
+
+.modal-actions button[type="submit"] { 
+  background-color: var(--primary-button-bg); 
+  color: var(--primary-button-text); 
+  border: none; 
+}
+
+/* =============================================================================
+   RECEIVER VIEW
+   ============================================================================= */
+.order-display { 
+  margin-top: 2rem; 
+}
+
+.order-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.order-card { 
+  padding: 1.5rem; 
+  background-color: var(--card-bg); 
+  border-radius: 12px; 
+  box-shadow: 0 4px 8px var(--shadow-color); 
+}
+
+.order-card h3 {
+  text-align: center;
+  margin-top: 0;
+}
+
+.order-timestamp {
+  font-size: 0.8rem;
+  color: var(--secondary-text);
+  text-align: right;
+  margin-bottom: 0.75rem;
+  font-style: italic;
+}
+
+.order-actions { 
+  display: flex; 
+  gap: 1rem; 
+  margin-top: 1.5rem; 
+}
+
+.order-actions button { 
+  flex: 1; 
+  padding: 0.8rem; 
+  font-size: 1rem; 
+}
+
+.acknowledge-button { 
+  background-color: var(--primary-button-bg); 
+  color: var(--primary-button-text); 
+  border: none; 
+}
+
+.reject-button { 
+  background-color: var(--reject-button-bg); 
+  color: var(--reject-button-text); 
+  border: 1px solid var(--reject-button-text); 
+}
+
+.waiting-text { 
+  text-align: center; 
+  color: var(--secondary-text); 
+  font-style: italic; 
+  padding: 2rem; 
+}
+
+/* =============================================================================
+   FEEDBACK & NOTIFICATIONS
+   ============================================================================= */
+.item-feedback-log {
+  margin-top: 1rem;
   padding: 1rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px var(--shadow-color);
-  border-left: 5px solid;
-  transition: all 0.3s ease;
+  border-top: 1px dashed var(--border-color);
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
 }
 
-.status-card:hover {
-  box-shadow: 0 4px 8px var(--shadow-color);
+[data-theme="dark"] .item-feedback-log {
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
-/* **NEW**: Animation for new status cards */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.item-feedback-log p {
+  margin: 0 0 0.5rem;
+  font-size: 0.85em;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  border-left: 3px solid transparent;
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
-.status-card {
-  animation: fadeInUp 0.3s ease-out;
+[data-theme="dark"] .item-feedback-log p {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* **ENHANCED**: Better visual hierarchy in status cards */
-.status-card h4 {
-  margin: 0 0 0.75rem 0;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="dark"] .status-card h4 {
-  border-bottom-color: rgba(255, 255, 255, 0.1);
-}
-
+/* Feedback message styling by type */
 .feedback-message.acknowledged-feedback {
   color: #2e7d32;
   background-color: rgba(76, 175, 80, 0.15);
@@ -651,4 +727,41 @@
 [data-theme="dark"] .feedback-message.rejected-feedback {
   color: #ef9a9a;
   background-color: rgba(244, 67, 54, 0.2);
+}
+
+/* Rate limiting banner */
+.cooldown-banner {
+  background-color: var(--error-bg);
+  color: var(--error-text);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--error-text);
+}
+
+/* =============================================================================
+   ANIMATIONS
+   ============================================================================= */
+@keyframes statusAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-180deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
