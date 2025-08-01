@@ -441,3 +441,214 @@
 [data-theme="dark"] .item-feedback-log p:contains("rejected") {
   color: #ef9a9a;
 }
+
+/* **NEW**: Sender Item List Styles (similar to receiver) */
+.sender-item-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.sender-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sender-item:last-child {
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* **NEW**: Background colors for acknowledged/rejected items on sender side */
+.sender-item.acknowledged {
+  background-color: #d4f8d4; /* Light green background */
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.sender-item.rejected {
+  background-color: #ffebee; /* Light red background */
+  border-color: #f44336;
+  color: #c62828;
+}
+
+/* Dark theme variants for sender items */
+[data-theme="dark"] .sender-item.acknowledged {
+  background-color: #1b4332;
+  border-color: #4caf50;
+  color: #a5d6a7;
+}
+
+[data-theme="dark"] .sender-item.rejected {
+  background-color: #4a1c1c;
+  border-color: #f44336;
+  color: #ef9a9a;
+}
+
+.sender-item-name {
+  font-weight: 500;
+  flex-grow: 1;
+}
+
+/* **NEW**: Strike-through for acted upon items on sender side */
+.sender-item.acknowledged .sender-item-name,
+.sender-item.rejected .sender-item-name {
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
+.sender-item-status {
+  display: flex;
+  align-items: center;
+}
+
+/* **ENHANCED**: Better feedback styling for different message types */
+.item-feedback-log p {
+  margin: 0 0 0.5rem;
+  font-size: 0.85em;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+/* **NEW**: Style feedback messages based on content */
+.item-feedback-log p {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .item-feedback-log p {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Target messages containing "acknowledged" */
+.item-feedback-log p:has-text("acknowledged"),
+.item-feedback-log p[data-type="acknowledged"] {
+  color: #2e7d32;
+  background-color: rgba(76, 175, 80, 0.15);
+  border-left-color: #4caf50;
+}
+
+/* Target messages containing "rejected" */
+.item-feedback-log p:has-text("rejected"),
+.item-feedback-log p[data-type="rejected"] {
+  color: #c62828;
+  background-color: rgba(244, 67, 54, 0.15);
+  border-left-color: #f44336;
+}
+
+[data-theme="dark"] .item-feedback-log p:has-text("acknowledged"),
+[data-theme="dark"] .item-feedback-log p[data-type="acknowledged"] {
+  color: #a5d6a7;
+  background-color: rgba(76, 175, 80, 0.2);
+}
+
+[data-theme="dark"] .item-feedback-log p:has-text("rejected"),
+[data-theme="dark"] .item-feedback-log p[data-type="rejected"] {
+  color: #ef9a9a;
+  background-color: rgba(244, 67, 54, 0.2);
+}
+
+/* **ENHANCED**: Status indicators (shared between sender and receiver) */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-weight: bold;
+  animation: statusAppear 0.4s ease-in;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.status-indicator.acknowledged {
+  background-color: #4caf50;
+  color: white;
+}
+
+.status-indicator.rejected {
+  background-color: #f44336;
+  color: white;
+}
+
+@keyframes statusAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-180deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* **ENHANCED**: Make status cards more compact when showing individual items */
+.status-card {
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  border-left: 5px solid;
+  transition: all 0.3s ease;
+}
+
+.status-card:hover {
+  box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+/* **NEW**: Animation for new status cards */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.status-card {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* **ENHANCED**: Better visual hierarchy in status cards */
+.status-card h4 {
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .status-card h4 {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.feedback-message.acknowledged-feedback {
+  color: #2e7d32;
+  background-color: rgba(76, 175, 80, 0.15);
+  border-left-color: #4caf50;
+}
+
+.feedback-message.rejected-feedback {
+  color: #c62828;
+  background-color: rgba(244, 67, 54, 0.15);
+  border-left-color: #f44336;
+}
+
+[data-theme="dark"] .feedback-message.acknowledged-feedback {
+  color: #a5d6a7;
+  background-color: rgba(76, 175, 80, 0.2);
+}
+
+[data-theme="dark"] .feedback-message.rejected-feedback {
+  color: #ef9a9a;
+  background-color: rgba(244, 67, 54, 0.2);
+}
