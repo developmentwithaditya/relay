@@ -665,6 +665,17 @@ function ReceiverView() {
   const [pendingOrders, setPendingOrders] = useState([]);
   const [itemStatuses, setItemStatuses] = useState({});
 
+  // **NEW**: Helper function to format timestamp
+  const formatTimestamp = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   useEffect(() => {
     // **MODIFIED**: Fetch initial list of pending orders
     async function fetchPendingOrders() {
@@ -701,6 +712,7 @@ function ReceiverView() {
     socket.on("order_list_updated", handleOrderListUpdated);
     return () => socket.off("order_list_updated", handleOrderListUpdated);
   }, [token]);
+
 
   // --- STEP 1 & 2: Handlers for individual item actions ---
   const handleItemAcknowledge = (orderId, itemName) => {
@@ -768,7 +780,7 @@ function ReceiverView() {
     }
   };
 
-  return (
+   return (
     <>
       <header className="app-header">
         <h1>Incoming Requests</h1>
@@ -782,7 +794,8 @@ function ReceiverView() {
             {pendingOrders.map((order) => (
               <div key={order._id} className="order-card animate-fade-in">
                 <div className="order-timestamp">
-                  Received: {new Date(order.createdAt).toLocaleTimeString()}
+                  {/* **UPDATED**: New timestamp format */}
+                  Received: {formatTimestamp(order.createdAt)}
                 </div>
 
                 {/* --- Item list with individual action buttons --- */}
@@ -860,5 +873,6 @@ function ReceiverView() {
     </>
   );
 }
+
 
 export default App;
