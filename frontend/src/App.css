@@ -765,3 +765,25 @@
     transform: translateY(0);
   }
 }
+/* =============================================================================
+   ORDER HISTORY PAGE
+   ============================================================================= */
+.history-button {
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.history-button:hover {
+  background-color: var(--primary-button-bg);
+  color: var(--primary-button-text);
+  border-color: var(--primary-button-bg);
+}

@@ -298,6 +298,82 @@ app.delete('/api/custom-items/:name', authMiddleware, async (req, res) => {
     }
 });
 
+// **NEW**: Order History Endpoints
+
+// [GET] /api/order-history/sent - Get sender's order history
+app.get("/api/order-history/sent", authMiddleware, async (req, res) => {
+  try {
+    const orders = await Order.find({ 
+      senderId: req.user.userId, 
+      status: { $in: ['acknowledged', 'rejected'] }
+    })
+    .populate('receiverId', 'displayName')
+    .sort({ completedAt: -1 })
+    .limit(10);
+    
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching sent order history" });
+  }
+});
+
+// [GET] /api/order-history/received - Get receiver's order history  
+app.get("/api/order-history/received", authMiddleware, async (req, res) => {
+  try {
+    const orders = await Order.find({ 
+      receiverId: req.user.userId, 
+      status: { $in: ['acknowledged', 'rejected'] }
+    })
+    .populate('senderId', 'displayName')
+    .sort({ completedAt: -1 })
+    .limit(10);
+    
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching received order history" });
+  }
+});
+
+// [GET] /api/order-history/stats - Get order statistics
+app.get("/api/order-history/stats", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    // Sender stats
+    const sentStats = await Order.aggregate([
+      { $match: { senderId: new mongoose.Types.ObjectId(userId), status: { $in: ['acknowledged', 'rejected'] } } },
+      { $group: {
+        _id: '$status',
+        count: { $sum: 1 }
+      }}
+    ]);
+    
+    // Receiver stats  
+    const receivedStats = await Order.aggregate([
+      { $match: { receiverId: new mongoose.Types.ObjectId(userId), status: { $in: ['acknowledged', 'rejected'] } } },
+      { $group: {
+        _id: '$status',
+        count: { $sum: 1 }
+      }}
+    ]);
+    
+    const formatStats = (stats) => {
+      const result = { acknowledged: 0, rejected: 0 };
+      stats.forEach(stat => {
+        result[stat._id] = stat.count;
+      });
+      return result;
+    };
+    
+    res.json({
+      sent: formatStats(sentStats),
+      received: formatStats(receivedStats)
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching order statistics" });
+  }
+});
+
 // --- 6. SOCKET.IO LOGIC ---
 const userSockets = {};
 
@@ -361,89 +437,152 @@ io.on("connection", (socket) => {
     }
   });
 
-    // [MODIFIED] acknowledge_order logic
-  socket.on("acknowledge_order", async ({ orderId, receiverId }) => {
-    try {
-      const order = await Order.findByIdAndUpdate(orderId, { status: "acknowledged" }, { new: true });
-      if (!order) return;
-      
-      const senderSocketId = userSockets[order.senderId.toString()];
-      if (senderSocketId) {
-        io.to(senderSocketId).emit("order_acknowledged", orderId);
-      }
-      
-      // **MODIFIED**: Send the updated list to the receiver
-      await emitUpdatedOrderList(receiverId);
-      console.log(`👍 Order ${orderId} acknowledged by ${receiverId}. List updated.`);
+// **MODIFIED**: Update existing socket handlers to save completion time and manage history limit
 
-    } catch (error) {
-      console.error("Error acknowledging order:", error);
+socket.on("acknowledge_order", async ({ orderId, receiverId }) => {
+  try {
+    const order = await Order.findByIdAndUpdate(
+      orderId, 
+      { 
+        status: "acknowledged",
+        completedAt: new Date()
+      }, 
+      { new: true }
+    );
+    if (!order) return;
+    
+    // **NEW**: Maintain 10 order limit for sender
+    await maintainOrderHistoryLimit(order.senderId, 'sent');
+    // **NEW**: Maintain 10 order limit for receiver
+    await maintainOrderHistoryLimit(order.receiverId, 'received');
+    
+    const senderSocketId = userSockets[order.senderId.toString()];
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("order_acknowledged", orderId);
     }
-  });
+    
+    await emitUpdatedOrderList(receiverId);
+    console.log(`👍 Order ${orderId} acknowledged by ${receiverId}. List updated.`);
 
-  // [MODIFIED] reject_order logic
-  socket.on("reject_order", async ({ orderId, receiverId }) => {
-    try {
-      const order = await Order.findByIdAndUpdate(orderId, { status: "rejected" }, { new: true });
-      if (!order) return;
+  } catch (error) {
+    console.error("Error acknowledging order:", error);
+  }
+});
 
-      const senderSocketId = userSockets[order.senderId.toString()];
-      if (senderSocketId) {
-        io.to(senderSocketId).emit("order_rejected", orderId);
-      }
-      
-      // **MODIFIED**: Send the updated list to the receiver
-      await emitUpdatedOrderList(receiverId);
-      console.log(`👎 Order ${orderId} rejected by ${receiverId}. List updated.`);
+ socket.on("reject_order", async ({ orderId, receiverId }) => {
+  try {
+    const order = await Order.findByIdAndUpdate(
+      orderId, 
+      { 
+        status: "rejected",
+        completedAt: new Date()
+      }, 
+      { new: true }
+    );
+    if (!order) return;
 
-    } catch (error) {
-      console.error("Error rejecting order:", error);
+    // **NEW**: Maintain 10 order limit for sender
+    await maintainOrderHistoryLimit(order.senderId, 'sent');
+    // **NEW**: Maintain 10 order limit for receiver  
+    await maintainOrderHistoryLimit(order.receiverId, 'received');
+
+    const senderSocketId = userSockets[order.senderId.toString()];
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("order_rejected", orderId);
     }
-  });
+    
+    await emitUpdatedOrderList(receiverId);
+    console.log(`👎 Order ${orderId} rejected by ${receiverId}. List updated.`);
+
+  } catch (error) {
+    console.error("Error rejecting order:", error);
+  }
+});
+
+// **NEW**: Function to maintain order history limit
+const maintainOrderHistoryLimit = async (userId, type) => {
+  try {
+    const query = type === 'sent' 
+      ? { senderId: userId, status: { $in: ['acknowledged', 'rejected'] } }
+      : { receiverId: userId, status: { $in: ['acknowledged', 'rejected'] } };
+    
+    const orders = await Order.find(query).sort({ completedAt: -1 });
+    
+    if (orders.length > 10) {
+      // Delete the oldest orders beyond the 10 limit
+      const ordersToDelete = orders.slice(10);
+      const idsToDelete = ordersToDelete.map(order => order._id);
+      await Order.deleteMany({ _id: { $in: idsToDelete } });
+      console.log(`🗑️ Cleaned up ${idsToDelete.length} old orders for user ${userId}`);
+    }
+  } catch (error) {
+    console.error("Error maintaining order history limit:", error);
+  }
+};
 
    // --- NEW: Event handlers for individual item feedback ---
 
-  // Listen for when a Receiver acknowledges a single item
-  socket.on("item_acknowledged", async ({ orderId, itemName, receiverId }) => {
-    try {
-      const receiver = await User.findById(receiverId);
-      const order = await Order.findById(orderId);
-      if (!order || !receiver) return;
+  // **MODIFIED**: Update item feedback handlers to save to database
+socket.on("item_acknowledged", async ({ orderId, itemName, receiverId }) => {
+  try {
+    const receiver = await User.findById(receiverId);
+    const order = await Order.findById(orderId);
+    if (!order || !receiver) return;
 
-      const senderSocketId = userSockets[order.senderId.toString()];
-      if (senderSocketId) {
-        // Emit a new event specifically for this action back to the Sender
-        io.to(senderSocketId).emit("sender_item_acknowledged", {
-          orderId,
+    // **NEW**: Save item feedback to database
+    await Order.findByIdAndUpdate(orderId, {
+      $push: {
+        itemFeedback: {
           itemName,
-          receiverName: receiver.displayName,
-        });
+          status: 'acknowledged',
+          timestamp: new Date()
+        }
       }
-    } catch (error) {
-      console.error("Error relaying item acknowledgment:", error);
+    });
+
+    const senderSocketId = userSockets[order.senderId.toString()];
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("sender_item_acknowledged", {
+        orderId,
+        itemName,
+        receiverName: receiver.displayName,
+      });
     }
-  });
+  } catch (error) {
+    console.error("Error relaying item acknowledgment:", error);
+  }
+});
 
   // Listen for when a Receiver rejects a single item
-  socket.on("item_rejected", async ({ orderId, itemName, receiverId }) => {
-    try {
-      const receiver = await User.findById(receiverId);
-      const order = await Order.findById(orderId);
-      if (!order || !receiver) return;
+socket.on("item_rejected", async ({ orderId, itemName, receiverId }) => {
+  try {
+    const receiver = await User.findById(receiverId);
+    const order = await Order.findById(orderId);
+    if (!order || !receiver) return;
 
-      const senderSocketId = userSockets[order.senderId.toString()];
-      if (senderSocketId) {
-        // Emit a new event specifically for this action back to the Sender
-        io.to(senderSocketId).emit("sender_item_rejected", {
-          orderId,
+    // **NEW**: Save item feedback to database
+    await Order.findByIdAndUpdate(orderId, {
+      $push: {
+        itemFeedback: {
           itemName,
-          receiverName: receiver.displayName,
-        });
+          status: 'rejected',
+          timestamp: new Date()
+        }
       }
-    } catch (error) {
-      console.error("Error relaying item rejection:", error);
+    });
+
+    const senderSocketId = userSockets[order.senderId.toString()];
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("sender_item_rejected", {
+        orderId,
+        itemName,
+        receiverName: receiver.displayName,
+      });
     }
-  });
+  } catch (error) {
+    console.error("Error relaying item rejection:", error);
+  }
+});
 
   socket.on("disconnect", () => {
     for (const userId in userSockets) {

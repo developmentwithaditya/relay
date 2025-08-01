@@ -9,6 +9,7 @@ import AuthPage from "./AuthPage";
 import ConnectPage from "./ConnectPage";
 import EditProfilePage from "./EditProfilePage";
 import PresetManagerPage from "./PresetManagerPage";
+import OrderHistoryPage from './OrderHistoryPage';
 import "./App.css";
 
 // --- MainApp Component (For connected users) ---
@@ -22,6 +23,9 @@ function MainApp({ user, onLogout, onEditProfile }) {
     mode: "add",
     presetId: null,
   });
+
+  // **NEW**: Order history state
+  const [showOrderHistory, setShowOrderHistory] = useState(false);
 
   useEffect(() => {
     const registerSocket = () => {
@@ -40,6 +44,11 @@ function MainApp({ user, onLogout, onEditProfile }) {
       socket.off("disconnect", onDisconnect);
     };
   }, [user]);
+
+  // **NEW**: Handle order history page
+  if (showOrderHistory) {
+    return <OrderHistoryPage onBack={() => setShowOrderHistory(false)} />;
+  }
 
   if (view === "sender" && presetManagerState.isOpen) {
     return (
@@ -77,6 +86,14 @@ function MainApp({ user, onLogout, onEditProfile }) {
           >
             {theme === "light" ? "🌙" : "☀️"}
           </button>
+          {/* **NEW**: Order History button */}
+          <button
+            onClick={() => setShowOrderHistory(true)}
+            className="history-button"
+            title="View Order History"
+          >
+            📋
+          </button>
           {view === "sender" && (
             <button
               onClick={() =>
@@ -111,6 +128,7 @@ function MainApp({ user, onLogout, onEditProfile }) {
     </div>
   );
 }
+
 
 // --- App Component (The Master Router) ---
 function App() {
