@@ -374,6 +374,23 @@ app.get("/api/order-history/stats", authMiddleware, async (req, res) => {
   }
 });
 
+// **NEW**: [GET] /api/pending-orders/sent - Get sender's pending orders
+app.get("/api/pending-orders/sent", authMiddleware, async (req, res) => {
+  try {
+    const orders = await Order.find({ 
+      senderId: req.user.userId, 
+      status: 'pending'
+    })
+    .populate('receiverId', 'displayName')
+    .sort({ createdAt: -1 })
+    .limit(10);
+    
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching sent pending orders" });
+  }
+});
+
 // --- 6. SOCKET.IO LOGIC ---
 const userSockets = {};
 

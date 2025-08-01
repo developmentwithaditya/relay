@@ -159,6 +159,7 @@ function App() {
 }
 
 // --- SenderView ---
+// --- SenderView ---
 function SenderView({ onEditPreset }) {
   const { user, token, refreshUserData } = useContext(AuthContext);
   const [sentOrders, setSentOrders] = useState([]);
@@ -174,6 +175,9 @@ function SenderView({ onEditPreset }) {
   const [cooldownTime, setCooldownTime] = useState(0);
   const cooldownIntervalRef = useRef(null);
 
+  // **NEW**: Loading state for initial fetch
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+
   // **NEW**: Effect to manage the cooldown timer
   useEffect(() => {
     if (cooldownTime > 0) {
@@ -185,6 +189,32 @@ function SenderView({ onEditPreset }) {
     }
     return () => clearInterval(cooldownIntervalRef.current);
   }, [cooldownTime]);
+
+  // **NEW**: Fetch pending orders on component mount
+  useEffect(() => {
+    const fetchPendingOrders = async () => {
+      if (!token) return;
+      try {
+        setIsLoadingOrders(true);
+        const orders = await apiRequest("/api/pending-orders/sent", { token });
+        if (orders && orders.length > 0) {
+          // Transform orders to match the expected format
+          const transformedOrders = orders.map(order => ({
+            ...order,
+            status: 'pending', // Ensure status is set
+            itemFeedback: [] // Initialize empty feedback array
+          }));
+          setSentOrders(transformedOrders);
+        }
+      } catch (error) {
+        console.error("Failed to fetch pending orders:", error);
+      } finally {
+        setIsLoadingOrders(false);
+      }
+    };
+
+    fetchPendingOrders();
+  }, [token]);
 
   const presetsByCategory = useMemo(() => {
     if (!user?.presets) return {};
@@ -206,16 +236,17 @@ function SenderView({ onEditPreset }) {
   }, [user.customItems]);
 
   useEffect(() => {
-    const handleOrderSaved = ({ tempId, dbId }) =>
-      setSentOrders((p) =>
-        p.map((o) =>
+    const handleOrderSaved = ({ tempId, dbId }) => {
+      setSentOrders((prev) =>
+        prev.map((o) =>
           o.tempId === tempId ? { ...o, _id: dbId, status: "pending" } : o
         )
       );
+    };
 
     const handleOrderAcknowledged = (id) => {
-      setSentOrders((p) =>
-        p.map((o) => (o._id === id ? { ...o, status: "acknowledged" } : o))
+      setSentOrders((prev) =>
+        prev.map((o) => (o._id === id ? { ...o, status: "acknowledged" } : o))
       );
       // **NEW**: Clear item statuses for acknowledged orders
       setSenderItemStatuses((prev) => {
@@ -227,15 +258,16 @@ function SenderView({ onEditPreset }) {
         });
         return newStatuses;
       });
+      // **MODIFIED**: Remove from list after shorter delay for better UX
       setTimeout(
-        () => setSentOrders((p) => p.filter((o) => o._id !== id)),
-        3000
+        () => setSentOrders((prev) => prev.filter((o) => o._id !== id)),
+        2000
       );
     };
 
     const handleOrderRejected = (id) => {
-      setSentOrders((p) =>
-        p.map((o) => (o._id === id ? { ...o, status: "rejected" } : o))
+      setSentOrders((prev) =>
+        prev.map((o) => (o._id === id ? { ...o, status: "rejected" } : o))
       );
       // **NEW**: Clear item statuses for rejected orders
       setSenderItemStatuses((prev) => {
@@ -247,9 +279,10 @@ function SenderView({ onEditPreset }) {
         });
         return newStatuses;
       });
+      // **MODIFIED**: Remove from list after shorter delay
       setTimeout(
-        () => setSentOrders((p) => p.filter((o) => o._id !== id)),
-        8000
+        () => setSentOrders((prev) => prev.filter((o) => o._id !== id)),
+        5000
       );
     };
 
@@ -372,7 +405,7 @@ function SenderView({ onEditPreset }) {
     }
   };
 
-  const sendOrder = (items) => {
+    const sendOrder = (items) => {
     // 1. Check if currently in cooldown
     if (cooldownTime > 0) {
       alert(
@@ -407,8 +440,14 @@ function SenderView({ onEditPreset }) {
     }
     if (Object.keys(itemsToSend).length > 0 && user?._id) {
       const tempId = `temp_${Date.now()}`;
-      const tempOrder = { tempId, items: itemsToSend, status: "sending" };
-      setSentOrders((prev) => [...prev, tempOrder]);
+      const tempOrder = { 
+        tempId, 
+        items: itemsToSend, 
+        status: "sending",
+        itemFeedback: [],
+        createdAt: new Date().toISOString()
+      };
+      setSentOrders((prev) => [tempOrder, ...prev]); // **MODIFIED**: Add to beginning
       socket.emit("send_order", {
         items: itemsToSend,
         senderId: user._id,
@@ -421,7 +460,18 @@ function SenderView({ onEditPreset }) {
 
   const isSendDisabled = cooldownTime > 0;
 
-  return (
+    // **NEW**: Helper function to format order timestamp
+  const formatOrderTime = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+return (
     <>
       {isModalOpen && (
         <div className="modal-backdrop">
@@ -456,68 +506,91 @@ function SenderView({ onEditPreset }) {
         </div>
       )}
 
-      <div className="status-card-container">
-        {sentOrders.map((ord) => (
-          <div
-            key={ord.tempId || ord._id}
-            className={`status-card ${ord.status}`}
-          >
-            <h4>
-              {ord.status === "sending" && "Sending..."}
-              {ord.status === "pending" && "Sent!"}
-              {ord.status === "acknowledged" && "Seen ✅"}
-              {ord.status === "rejected" &&
-                `Rejected by ${user.partnerId?.displayName || "Receiver"} ❌`}
-            </h4>
-            {ord.status !== "rejected" && (
-              <ul className="sender-item-list">
-                {Object.entries(ord.items).map(([name, qty]) => {
-                  const itemStatus = senderItemStatuses[`${ord._id}-${name}`];
-                  return (
-                    <li
-                      key={name}
-                      className={`sender-item ${itemStatus || ""}`}
-                    >
-                      <span className="sender-item-name">
-                        {MENU_ITEMS.find((i) => i.id == name)?.name || name} (x
-                        {qty})
-                      </span>
-                      <div className="sender-item-status">
-                        {itemStatus === "acknowledged" && (
-                          <span className="status-indicator acknowledged">
-                            ✓
+      {/* **NEW**: Scrollable status card container with loading state */}
+      <div className="status-card-section">
+        <h3 className="status-section-title">
+          Your Orders {sentOrders.length > 0 && `(${sentOrders.length})`}
+        </h3>
+        <div className="status-card-container">
+          {isLoadingOrders ? (
+            <div className="loading-orders">
+              <p>Loading your orders...</p>
+            </div>
+          ) : sentOrders.length > 0 ? (
+            sentOrders.map((ord) => (
+              <div
+                key={ord.tempId || ord._id}
+                className={`status-card ${ord.status}`}
+              >
+                <div className="status-card-header">
+                  <h4>
+                    {ord.status === "sending" && "Sending..."}
+                    {ord.status === "pending" && "Sent!"}
+                    {ord.status === "acknowledged" && "Seen ✅"}
+                    {ord.status === "rejected" &&
+                      `Rejected by ${user.partnerId?.displayName || "Receiver"} ❌`}
+                  </h4>
+                  <span className="order-time">
+                    {formatOrderTime(ord.createdAt)}
+                  </span>
+                </div>
+                
+                {ord.status !== "rejected" && (
+                  <ul className="sender-item-list">
+                    {Object.entries(ord.items).map(([name, qty]) => {
+                      const itemStatus = senderItemStatuses[`${ord._id}-${name}`];
+                      return (
+                        <li
+                          key={name}
+                          className={`sender-item ${itemStatus || ""}`}
+                        >
+                          <span className="sender-item-name">
+                            {MENU_ITEMS.find((i) => i.id == name)?.name || name} (x
+                            {qty})
                           </span>
-                        )}
-                        {itemStatus === "rejected" && (
-                          <span className="status-indicator rejected">✗</span>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            {/* Individual item feedback log */}
-            {ord.itemFeedback && ord.itemFeedback.length > 0 && (
-              <div className="item-feedback-log">
-                {ord.itemFeedback.map((msg, index) => {
-                  const isAcknowledged = msg.includes("acknowledged");
-                  const isRejected = msg.includes("rejected");
-                  return (
-                    <p
-                      key={index}
-                      className={`feedback-message ${
-                        isAcknowledged ? "acknowledged-feedback" : ""
-                      } ${isRejected ? "rejected-feedback" : ""}`}
-                    >
-                      {msg}
-                    </p>
-                  );
-                })}
+                          <div className="sender-item-status">
+                            {itemStatus === "acknowledged" && (
+                              <span className="status-indicator acknowledged">
+                                ✓
+                              </span>
+                            )}
+                            {itemStatus === "rejected" && (
+                              <span className="status-indicator rejected">✗</span>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                
+                {/* Individual item feedback log */}
+                {ord.itemFeedback && ord.itemFeedback.length > 0 && (
+                  <div className="item-feedback-log">
+                    {ord.itemFeedback.map((msg, index) => {
+                      const isAcknowledged = msg.includes("acknowledged");
+                      const isRejected = msg.includes("rejected");
+                      return (
+                        <p
+                          key={index}
+                          className={`feedback-message ${
+                            isAcknowledged ? "acknowledged-feedback" : ""
+                          } ${isRejected ? "rejected-feedback" : ""}`}
+                        >
+                          {msg}
+                        </p>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+            ))
+          ) : (
+            <div className="no-orders">
+              <p>No pending orders. Send your first request below!</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Rest of the component remains the same */}
@@ -554,7 +627,7 @@ function SenderView({ onEditPreset }) {
           ))
         ) : (
           <p className="no-presets-text">
-            Click 'Manage Presets' to create your first one!
+            Click 'Manage Presets' to create your first one!  
           </p>
         )}
       </div>
