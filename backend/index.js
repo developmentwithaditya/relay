@@ -255,10 +255,13 @@ app.patch('/api/presets/:id', authMiddleware, async (req, res) => {
 });
 
 // [GET] /api/pending-orders
+// Now fetches an array of up to 5 pending orders, not just one.
 app.get("/api/pending-orders", authMiddleware, async (req, res) => {
   try {
-    const pendingOrder = await Order.findOne({ receiverId: req.user.userId, status: "pending" }).sort({ createdAt: -1 });
-    res.json(pendingOrder);
+    const pendingOrders = await Order.find({ receiverId: req.user.userId, status: "pending" })
+      .sort({ createdAt: 1 }) // Sort by oldest first
+      .limit(5); // Limit to 5
+    res.json(pendingOrders);
   } catch (error) {
     res.status(500).json({ message: "Error fetching pending orders" });
   }
@@ -297,6 +300,22 @@ app.delete('/api/custom-items/:name', authMiddleware, async (req, res) => {
 
 // --- 6. SOCKET.IO LOGIC ---
 const userSockets = {};
+
+// Helper function to get and emit the updated order list for a receiver
+const emitUpdatedOrderList = async (receiverId) => {
+    const partnerSocketId = userSockets[receiverId.toString()];
+    if (partnerSocketId) {
+        try {
+            const pendingOrders = await Order.find({ receiverId: receiverId, status: "pending" })
+                .sort({ createdAt: 1 }) // Oldest first
+                .limit(5);
+            io.to(partnerSocketId).emit("order_list_updated", pendingOrders);
+        } catch (error) {
+            console.error("Error fetching and emitting order list:", error);
+        }
+    }
+};
+
 io.on("connection", (socket) => {
   console.log(`✅ User connected: ${socket.id}`);
 
@@ -305,10 +324,19 @@ io.on("connection", (socket) => {
     console.log(`🔗 Registered socket ${socket.id} for user ${userId}`);
   });
 
+  // [MODIFIED] send_order logic
   socket.on("send_order", async ({ items, senderId, tempId }) => {
     try {
       const sender = await User.findById(senderId);
       if (!sender || !sender.partnerId) return;
+
+      // **NEW**: Check if the receiver's queue is full
+      const pendingCount = await Order.countDocuments({ receiverId: sender.partnerId, status: "pending" });
+      if (pendingCount >= 5) {
+        socket.emit("order_queue_full"); // Inform sender the queue is full
+        console.log(`🚫 Order rejected: Queue full for receiver ${sender.partnerId}`);
+        return;
+      }
 
       let formattedItems = {};
       for (const key in items) {
@@ -319,18 +347,20 @@ io.on("connection", (socket) => {
       const newOrder = new Order({ items: formattedItems, senderId, receiverId: sender.partnerId });
       await newOrder.save();
       
+      // Let the sender know the individual order was saved
       socket.emit("order_saved", { tempId, dbId: newOrder._id });
       
-      const partnerSocketId = userSockets[sender.partnerId.toString()];
-      if (partnerSocketId) {
-        io.to(partnerSocketId).emit("receive_order", newOrder);
-        console.log(`📦 Order sent from ${senderId} to partner ${sender.partnerId}`);
-      }
+      // **MODIFIED**: Send the entire updated list to the receiver
+      await emitUpdatedOrderList(sender.partnerId);
+      console.log(`📦 Order sent from ${senderId} to partner ${sender.partnerId}. List updated.`);
+
     } catch (error) {
       console.error("Error processing order:", error);
+      socket.emit("order_error", { message: "Could not process your request." });
     }
   });
 
+    // [MODIFIED] acknowledge_order logic
   socket.on("acknowledge_order", async ({ orderId, receiverId }) => {
     try {
       const order = await Order.findByIdAndUpdate(orderId, { status: "acknowledged" }, { new: true });
@@ -339,13 +369,18 @@ io.on("connection", (socket) => {
       const senderSocketId = userSockets[order.senderId.toString()];
       if (senderSocketId) {
         io.to(senderSocketId).emit("order_acknowledged", orderId);
-        console.log(`👍 Order ${orderId} acknowledged by ${receiverId}.`);
       }
+      
+      // **MODIFIED**: Send the updated list to the receiver
+      await emitUpdatedOrderList(receiverId);
+      console.log(`👍 Order ${orderId} acknowledged by ${receiverId}. List updated.`);
+
     } catch (error) {
       console.error("Error acknowledging order:", error);
     }
   });
 
+  // [MODIFIED] reject_order logic
   socket.on("reject_order", async ({ orderId, receiverId }) => {
     try {
       const order = await Order.findByIdAndUpdate(orderId, { status: "rejected" }, { new: true });
@@ -354,8 +389,12 @@ io.on("connection", (socket) => {
       const senderSocketId = userSockets[order.senderId.toString()];
       if (senderSocketId) {
         io.to(senderSocketId).emit("order_rejected", orderId);
-        console.log(`👎 Order ${orderId} rejected by ${receiverId}.`);
       }
+      
+      // **MODIFIED**: Send the updated list to the receiver
+      await emitUpdatedOrderList(receiverId);
+      console.log(`👎 Order ${orderId} rejected by ${receiverId}. List updated.`);
+
     } catch (error) {
       console.error("Error rejecting order:", error);
     }

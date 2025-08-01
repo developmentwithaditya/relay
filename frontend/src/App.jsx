@@ -1,5 +1,5 @@
 // frontend/src/App.jsx
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import { AuthContext } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import apiRequest, { socket } from './services/api';
@@ -97,9 +97,26 @@ function SenderView({ onEditPreset }) {
   const { user, token, refreshUserData } = useContext(AuthContext);
   const [sentOrders, setSentOrders] = useState([]);
   const [quickRequestItems, setQuickRequestItems] = useState({});
-  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [customItemName, setCustomItemName] = useState('');
+
+  // **NEW**: State and ref for rate limiting
+  const [requestTimestamps, setRequestTimestamps] = useState([]);
+  const [cooldownTime, setCooldownTime] = useState(0);
+  const cooldownIntervalRef = useRef(null);
+
+  // **NEW**: Effect to manage the cooldown timer
+  useEffect(() => {
+    if (cooldownTime > 0) {
+      cooldownIntervalRef.current = setInterval(() => {
+        setCooldownTime(prev => Math.max(0, prev - 1));
+      }, 1000);
+    } else {
+      clearInterval(cooldownIntervalRef.current);
+    }
+    return () => clearInterval(cooldownIntervalRef.current);
+  }, [cooldownTime]);
+
 
   const presetsByCategory = useMemo(() => {
     if (!user?.presets) return {};
@@ -109,13 +126,9 @@ function SenderView({ onEditPreset }) {
     }, {});
   }, [user?.presets]);
 
-  // Combine default menu items with user's saved custom items for the grid
   const availableItems = useMemo(() => {
     const userCustomItems = user.customItems?.map(name => ({
-      id: name, // Use the name as a unique ID for React keys
-      name: name,
-      icon: '📝', // A generic icon for custom items
-      isCustom: true,
+      id: name, name: name, icon: '📝', isCustom: true,
     })) || [];
     return [...MENU_ITEMS, ...userCustomItems];
   }, [user.customItems]);
@@ -151,18 +164,24 @@ function SenderView({ onEditPreset }) {
       }));
     };
 
+ // **NEW**: Listen for queue full event from server
+    const handleQueueFull = () => {
+        alert("Your partner's request queue is full. Please wait for them to clear some requests.");
+    };
     socket.on('order_saved', handleOrderSaved);
     socket.on('order_acknowledged', handleOrderAcknowledged);
     socket.on('order_rejected', handleOrderRejected);
     socket.on('sender_item_acknowledged', handleItemAcknowledged);
     socket.on('sender_item_rejected', handleItemRejected);
-    
+    socket.on('queue_full', handleQueueFull);
+
     return () => {
       socket.off('order_saved', handleOrderSaved);
       socket.off('order_acknowledged', handleOrderAcknowledged);
       socket.off('order_rejected', handleOrderRejected);
       socket.off('sender_item_acknowledged', handleItemAcknowledged);
       socket.off('sender_item_rejected', handleItemRejected);
+      socket.off('queue_full', handleQueueFull);
     };
   }, [user]);
 
@@ -208,6 +227,25 @@ function SenderView({ onEditPreset }) {
   };
 
   const sendOrder = (items) => {
+      // 1. Check if currently in cooldown
+    if (cooldownTime > 0) {
+      alert(`Please wait ${cooldownTime} more seconds before sending another request.`);
+      return;
+    }
+
+    // 2. Check the rate limit (5 requests in 15 seconds)
+    const now = Date.now();
+    const fifteenSecondsAgo = now - 15000;
+    const recentRequests = requestTimestamps.filter(ts => ts > fifteenSecondsAgo);
+
+    if (recentRequests.length >= 5) {
+      alert("You have sent too many requests. Please wait 15 seconds.");
+      setCooldownTime(15);
+      setRequestTimestamps(recentRequests); // Keep the recent ones for the next check
+      return;
+    }
+
+     // 3. Proceed with sending the order
     let itemsToSend = {};
     if (Array.isArray(items)) {
         itemsToSend = items.reduce((acc, item) => ({ ...acc, [item.name]: item.quantity }), {});
@@ -219,10 +257,14 @@ function SenderView({ onEditPreset }) {
       const tempOrder = { tempId, items: itemsToSend, status: 'sending' };
       setSentOrders(prev => [...prev, tempOrder]);
       socket.emit('send_order', { items: itemsToSend, senderId: user._id, tempId });
+      setRequestTimestamps([...recentRequests, now]);
       setQuickRequestItems({});
     }
   };
   
+  // **NEW**: Disable send button if in cooldown
+  const isSendDisabled = cooldownTime > 0;
+
   return (
     <>
      {isModalOpen && (
@@ -247,6 +289,13 @@ function SenderView({ onEditPreset }) {
       )}
 
      <header className="app-header"><h1>Send Request</h1><p>Send to: {user.partnerId?.displayName || '...'}</p></header>
+      {/* **NEW**: Cooldown Timer Display */}
+     {isSendDisabled && (
+        <div className="cooldown-banner">
+            Rate limit reached. Please wait {cooldownTime}s.
+        </div>
+     )}
+
       <div className="status-card-container">
         {sentOrders.map(ord => (
           <div key={ord.tempId || ord._id} className={`status-card ${ord.status}`}>
@@ -281,8 +330,8 @@ function SenderView({ onEditPreset }) {
                   <div key={preset._id} className="preset-card">
                     <span className="preset-name">{preset.name}</span>
                     <div className="preset-card-actions">
-                      <button onClick={() => onEditPreset(preset._id)} className="preset-action-btn">Edit</button>
-                      <button onClick={() => sendOrder(preset.customItems)} className="preset-action-btn send">Send</button>
+                      <button onClick={() => onEditPreset(preset._id)} className="preset-action-btn" disabled={isSendDisabled}>Edit</button>
+                      <button onClick={() => sendOrder(preset.customItems)} className="preset-action-btn send" disabled={isSendDisabled}>Send</button>
                     </div>
                   </div>
                 ))}
@@ -343,106 +392,163 @@ function SenderView({ onEditPreset }) {
             ) : <p className="no-items-text">Click an item to add it.</p>}
           </div>
         </div>
-        <button className="send-order-button" onClick={() => sendOrder(quickRequestItems)} disabled={Object.keys(quickRequestItems).length === 0}>
-          Send Quick Request
+        <button className="send-order-button" onClick={() => sendOrder(quickRequestItems)} disabled={Object.keys(quickRequestItems).length === 0 || isSendDisabled}>
+          {isSendDisabled ? `Wait ${cooldownTime}s` : 'Send Quick Request'}
         </button>
       </div>
     </>
   );
 }
 
+// ...existing code...
+
 // --- ReceiverView ---
 function ReceiverView() {
   const { user, token } = useContext(AuthContext);
   const [activeOrder, setActiveOrder] = useState(null);
-    // --- STEP 1: State to track individual item statuses for UI feedback ---
+  // --- STEP 1: State to track individual item statuses for UI feedback ---
+  // **MODIFIED**: State now holds an array of orders, not just one
+  const [pendingOrders, setPendingOrders] = useState([]);
   const [itemStatuses, setItemStatuses] = useState({});
   
   useEffect(() => {
-    async function fetchPendingOrder() {
+    // **MODIFIED**: Fetch initial list of pending orders
+    async function fetchPendingOrders() {
       if (!token) return;
       try {
-        const order = await apiRequest('/api/pending-orders', { token });
-        if (order) setActiveOrder(order);
-      } catch (error) { console.error("Failed to fetch pending orders:", error); }
+        const orders = await apiRequest('/api/pending-orders', { token });
+        if (orders) setPendingOrders(orders);
+      } catch (error) { 
+        console.error("Failed to fetch pending orders:", error); 
+      }
     }
-    fetchPendingOrder();
-    const handleReceiveOrder = (orderData) => {
-      setActiveOrder(orderData);
-      setItemStatuses({}); // Reset item statuses for the new order
+    fetchPendingOrders();
+
+    // **MODIFIED**: Listen for the new event that sends the whole list
+    const handleOrderListUpdated = (ordersData) => {
+      setPendingOrders(ordersData);
+      // **FIXED**: Reset item statuses for the new list, don't reference undefined variables
+      setItemStatuses({});
     };
-    socket.on('receive_order', handleReceiveOrder);
-    return () => socket.off('receive_order', handleReceiveOrder);
+    
+    socket.on('order_list_updated', handleOrderListUpdated);
+    return () => socket.off('order_list_updated', handleOrderListUpdated);
   }, [token]);
 
-    // --- STEP 1 & 2: Handlers for individual item actions ---
-  const handleItemAcknowledge = (itemName) => {
-    if (activeOrder) {
-      socket.emit('item_acknowledged', {
-        orderId: activeOrder._id,
-        itemName: itemName,
-        receiverId: user._id
+  // --- STEP 1 & 2: Handlers for individual item actions ---
+  const handleItemAcknowledge = (orderId, itemName) => {
+    // **FIXED**: Use orderId parameter instead of activeOrder
+    socket.emit('item_acknowledged', {
+      orderId: orderId,
+      itemName: itemName,
+      receiverId: user._id
+    });
+    // Give instant visual feedback
+    setItemStatuses(prev => ({ ...prev, [`${orderId}-${itemName}`]: 'acknowledged' }));
+  };
+
+  const handleItemReject = (orderId, itemName) => {
+    // **FIXED**: Use orderId parameter instead of activeOrder
+    socket.emit('item_rejected', {
+      orderId: orderId,
+      itemName: itemName,
+      receiverId: user._id
+    });
+    // Give instant visual feedback
+    setItemStatuses(prev => ({ ...prev, [`${orderId}-${itemName}`]: 'rejected' }));
+  };
+
+  // **MODIFIED**: Actions now need the specific orderId
+  const handleAcknowledge = (orderId) => {
+    if (orderId) {
+      socket.emit('acknowledge_order', { orderId, receiverId: user._id });
+      // Optimistic update: remove the order from the list immediately
+      setPendingOrders(prev => prev.filter(o => o._id !== orderId));
+      // **FIXED**: Clear item statuses for this order when acknowledging
+      setItemStatuses(prev => {
+        const newStatuses = { ...prev };
+        Object.keys(newStatuses).forEach(key => {
+          if (key.startsWith(`${orderId}-`)) {
+            delete newStatuses[key];
+          }
+        });
+        return newStatuses;
       });
-      // Give instant visual feedback
-      setItemStatuses(prev => ({ ...prev, [itemName]: 'acknowledged' }));
     }
   };
 
-  const handleItemReject = (itemName) => {
-    if (activeOrder) {
-      socket.emit('item_rejected', {
-        orderId: activeOrder._id,
-        itemName: itemName,
-        receiverId: user._id
+  const handleReject = (orderId) => {
+    if (orderId) {
+      socket.emit('reject_order', { orderId, receiverId: user._id });
+      // Optimistic update
+      setPendingOrders(prev => prev.filter(o => o._id !== orderId));
+      // **FIXED**: Clear item statuses for this order when rejecting
+      setItemStatuses(prev => {
+        const newStatuses = { ...prev };
+        Object.keys(newStatuses).forEach(key => {
+          if (key.startsWith(`${orderId}-`)) {
+            delete newStatuses[key];
+          }
+        });
+        return newStatuses;
       });
-      // Give instant visual feedback
-      setItemStatuses(prev => ({ ...prev, [itemName]: 'rejected' }));
     }
   };
 
-  const handleAcknowledge = () => {
-    if (activeOrder) {
-      socket.emit('acknowledge_order', { orderId: activeOrder._id, receiverId: user._id });
-      setActiveOrder(null);
-    }
-  };
-  const handleReject = () => {
-    if (activeOrder) {
-        socket.emit('reject_order', { orderId: activeOrder._id, receiverId: user._id });
-        setActiveOrder(null);
-    }
-  };
-  
   return (
     <>
-      <header className="app-header"><h1>Incoming Orders</h1><p>From: {user.partnerId?.displayName || '...'}</p></header>
-      <div className="order-display">{activeOrder ? (
-          <div className="order-card animate-fade-in">
-            <h3>New Order Received!</h3>
-              {/* --- STEP 1 & 2: Updated item list with individual action buttons --- */}
-             <ul className="receiver-item-list">
-              {Object.entries(activeOrder.items).map(([name, quantity]) => (
-                <li key={name} className={`receiver-item ${itemStatuses[name] || ''}`}>
-                  <span className="receiver-item-name">{name} (x{quantity})</span>
-                  <div className="receiver-item-actions">
-                    <button onClick={() => handleItemReject(name)} className="item-action-btn reject">✗</button>
-                    <button onClick={() => handleItemAcknowledge(name)} className="item-action-btn acknowledge">✓</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+      <header className="app-header"><h1>Incoming Requests</h1><p>From: {user.partnerId?.displayName || '...'}</p></header>
+      <div className="order-display">
+        {/* Check if there are any pending orders to display */}
+        {pendingOrders.length > 0 ? (
+          <div className="order-list-container">
+            {/* Create a card for each order in the pendingOrders array */}
+            {pendingOrders.map(order => (
+              <div key={order._id} className="order-card animate-fade-in">
+                
+                <div className="order-timestamp">
+                  Received: {new Date(order.createdAt).toLocaleTimeString()}
+                </div>
 
-            <ul>{Object.entries(activeOrder.items).map(([name, quantity]) => (
-                <li key={name}><span>{name}</span><span className="order-quantity">x {quantity}</span></li>
-              ))}</ul>
-            <div className="order-actions">
-                <button className="reject-button" onClick={handleReject}>Reject</button>
-                <button className="acknowledge-button" onClick={handleAcknowledge}>Acknowledge</button>
-            </div>
-          </div>) : (<p className="waiting-text">Waiting for new orders...</p>)}
+                {/* --- Item list with individual action buttons --- */}
+                <ul className="receiver-item-list">
+                  {Object.entries(order.items).map(([name, quantity]) => (
+                    // The className applies visual feedback (like line-through) based on the item's status
+                    <li key={name} className={`receiver-item ${itemStatuses[`${order._id}-${name}`] || ''}`}>
+                      <span className="receiver-item-name">{name} (x{quantity})</span>
+                      <div className="receiver-item-actions">
+                        {/* **FIXED**: Only show buttons if item hasn't been acted upon */}
+                        {!itemStatuses[`${order._id}-${name}`] && (
+                          <>
+                            <button onClick={() => handleItemReject(order._id, name)} className="item-action-btn reject">✗</button>
+                            <button onClick={() => handleItemAcknowledge(order._id, name)} className="item-action-btn acknowledge">✓</button>
+                          </>
+                        )}
+                        {/* **FIXED**: Show status indicator when item has been acted upon */}
+                        {itemStatuses[`${order._id}-${name}`] === 'acknowledged' && <span className="status-indicator acknowledged">✓</span>}
+                        {itemStatuses[`${order._id}-${name}`] === 'rejected' && <span className="status-indicator rejected">✗</span>}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Main actions for the entire order */}
+                <div className="order-actions">
+                  <button className="reject-button" onClick={() => handleReject(order._id)}>Reject All</button>
+                  <button className="acknowledge-button" onClick={() => handleAcknowledge(order._id)}>Acknowledge All</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          // Message to show when the order list is empty
+          <p className="waiting-text">Waiting for new requests...</p>
+        )}
       </div>
     </>
   );
 }
+
+// ...existing code...
 
 export default App;
