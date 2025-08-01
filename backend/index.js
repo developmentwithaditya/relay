@@ -325,6 +325,7 @@ io.on("connection", (socket) => {
   });
 
   // [MODIFIED] send_order logic
+  // **FIXED**: Make sure event name matches frontend
   socket.on("send_order", async ({ items, senderId, tempId }) => {
     try {
       const sender = await User.findById(senderId);
@@ -333,7 +334,7 @@ io.on("connection", (socket) => {
       // **NEW**: Check if the receiver's queue is full
       const pendingCount = await Order.countDocuments({ receiverId: sender.partnerId, status: "pending" });
       if (pendingCount >= 5) {
-        socket.emit("order_queue_full"); // Inform sender the queue is full
+        socket.emit("queue_full"); // **FIXED**: Correct event name
         console.log(`🚫 Order rejected: Queue full for receiver ${sender.partnerId}`);
         return;
       }

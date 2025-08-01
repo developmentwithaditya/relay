@@ -263,3 +263,181 @@
     cursor: not-allowed;
     opacity: 0.7;
 }
+
+/* --- ENHANCED: Styles for Interactive Receiver Item List --- */
+.receiver-item-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.receiver-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+  background-color: var(--card-bg);
+}
+
+.receiver-item:last-child {
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* **NEW**: Background colors for acknowledged/rejected items */
+.receiver-item.acknowledged {
+  background-color: #d4f8d4; /* Light green background */
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.receiver-item.rejected {
+  background-color: #ffebee; /* Light red background */
+  border-color: #f44336;
+  color: #c62828;
+}
+
+/* Dark theme variants */
+[data-theme="dark"] .receiver-item.acknowledged {
+  background-color: #1b4332;
+  border-color: #4caf50;
+  color: #a5d6a7;
+}
+
+[data-theme="dark"] .receiver-item.rejected {
+  background-color: #4a1c1c;
+  border-color: #f44336;
+  color: #ef9a9a;
+}
+
+.receiver-item-name {
+  font-weight: 500;
+  flex-grow: 1;
+}
+
+/* **ENHANCED**: Strike-through for acted upon items */
+.receiver-item.acknowledged .receiver-item-name,
+.receiver-item.rejected .receiver-item-name {
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
+.receiver-item-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.item-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.item-action-btn.reject {
+  background-color: var(--reject-button-bg);
+  color: var(--reject-button-text);
+}
+.item-action-btn.reject:hover {
+  background-color: #f44336;
+  color: white;
+  transform: scale(1.1);
+}
+
+.item-action-btn.acknowledge {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+}
+.item-action-btn.acknowledge:hover {
+  background-color: #4caf50;
+  color: white;
+  transform: scale(1.1);
+}
+
+/* **NEW**: Status indicators */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: bold;
+  animation: statusAppear 0.3s ease-in;
+}
+
+.status-indicator.acknowledged {
+  background-color: #4caf50;
+  color: white;
+}
+
+.status-indicator.rejected {
+  background-color: #f44336;
+  color: white;
+}
+
+@keyframes statusAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* **ENHANCED**: Sender feedback styles */
+.item-feedback-log {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+[data-theme="dark"] .item-feedback-log {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.item-feedback-log p {
+  margin: 0 0 0.5rem;
+  font-size: 0.85em;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+/* **NEW**: Different colors for acknowledged vs rejected feedback */
+.item-feedback-log p:contains("acknowledged") {
+  color: #2e7d32;
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.item-feedback-log p:contains("rejected") {
+  color: #c62828;
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+[data-theme="dark"] .item-feedback-log p:contains("acknowledged") {
+  color: #a5d6a7;
+}
+
+[data-theme="dark"] .item-feedback-log p:contains("rejected") {
+  color: #ef9a9a;
+}

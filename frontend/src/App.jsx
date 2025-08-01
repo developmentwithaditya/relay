@@ -427,8 +427,21 @@ function ReceiverView() {
     // **MODIFIED**: Listen for the new event that sends the whole list
     const handleOrderListUpdated = (ordersData) => {
       setPendingOrders(ordersData);
-      // **FIXED**: Reset item statuses for the new list, don't reference undefined variables
-      setItemStatuses({});
+      // **FIXED**: Only reset item statuses for orders that are no longer in the list
+      setItemStatuses(prev => {
+        const newStatuses = { ...prev };
+        const currentOrderIds = ordersData.map(order => order._id);
+        
+        // Remove statuses for orders that are no longer pending
+        Object.keys(newStatuses).forEach(key => {
+          const orderId = key.split('-')[0];
+          if (!currentOrderIds.includes(orderId)) {
+            delete newStatuses[key];
+          }
+        });
+        
+        return newStatuses;
+      });
     };
     
     socket.on('order_list_updated', handleOrderListUpdated);
@@ -512,24 +525,26 @@ function ReceiverView() {
 
                 {/* --- Item list with individual action buttons --- */}
                 <ul className="receiver-item-list">
-                  {Object.entries(order.items).map(([name, quantity]) => (
-                    // The className applies visual feedback (like line-through) based on the item's status
-                    <li key={name} className={`receiver-item ${itemStatuses[`${order._id}-${name}`] || ''}`}>
-                      <span className="receiver-item-name">{name} (x{quantity})</span>
-                      <div className="receiver-item-actions">
-                        {/* **FIXED**: Only show buttons if item hasn't been acted upon */}
-                        {!itemStatuses[`${order._id}-${name}`] && (
-                          <>
-                            <button onClick={() => handleItemReject(order._id, name)} className="item-action-btn reject">✗</button>
-                            <button onClick={() => handleItemAcknowledge(order._id, name)} className="item-action-btn acknowledge">✓</button>
-                          </>
-                        )}
-                        {/* **FIXED**: Show status indicator when item has been acted upon */}
-                        {itemStatuses[`${order._id}-${name}`] === 'acknowledged' && <span className="status-indicator acknowledged">✓</span>}
-                        {itemStatuses[`${order._id}-${name}`] === 'rejected' && <span className="status-indicator rejected">✗</span>}
-                      </div>
-                    </li>
-                  ))}
+                  {Object.entries(order.items).map(([name, quantity]) => {
+                    const itemStatus = itemStatuses[`${order._id}-${name}`];
+                    return (
+                      <li key={name} className={`receiver-item ${itemStatus || ''}`}>
+                        <span className="receiver-item-name">{name} (x{quantity})</span>
+                        <div className="receiver-item-actions">
+                          {/* **ENHANCED**: Only show buttons if item hasn't been acted upon */}
+                          {!itemStatus && (
+                            <>
+                              <button onClick={() => handleItemReject(order._id, name)} className="item-action-btn reject">✗</button>
+                              <button onClick={() => handleItemAcknowledge(order._id, name)} className="item-action-btn acknowledge">✓</button>
+                            </>
+                          )}
+                          {/* **ENHANCED**: Show status indicator when item has been acted upon */}
+                          {itemStatus === 'acknowledged' && <span className="status-indicator acknowledged">✓</span>}
+                          {itemStatus === 'rejected' && <span className="status-indicator rejected">✗</span>}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 {/* Main actions for the entire order */}
@@ -548,7 +563,5 @@ function ReceiverView() {
     </>
   );
 }
-
-// ...existing code...
 
 export default App;
