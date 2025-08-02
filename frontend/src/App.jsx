@@ -162,14 +162,16 @@ function PushNotificationManager() {
 }
 
 
-// --- MainApp Component (Completely Redesigned) ---
+// --- MainApp Component (Redesigned with Hamburger Menu) ---
+// --- MainApp Component (Redesigned with Hamburger Menu) ---
 function MainApp({ user, onLogout, onEditProfile }) {
   const { theme, toggleTheme } = useTheme();
   const view = user.role;
   const [isConnected, setIsConnected] = useState(socket.connected);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "info" });
-  
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const [presetManagerState, setPresetManagerState] = useState({
     isOpen: false,
     mode: "add",
@@ -181,7 +183,19 @@ function MainApp({ user, onLogout, onEditProfile }) {
   };
 
   const hideToast = () => {
-    setToast(prev => ({ ...prev, show: false }));
+    setToast((prev) => ({ ...prev, show: false }));
+  };
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  // Function to handle menu item clicks and ensure the menu closes
+  const handleMenuClick = (action) => {
+    if (action) {
+      action();
+    }
+    setIsMenuOpen(false);
   };
 
   useEffect(() => {
@@ -210,6 +224,14 @@ function MainApp({ user, onLogout, onEditProfile }) {
     };
   }, [user]);
 
+  // Lock body scroll when menu is open
+  useEffect(() => {
+    document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
+
   if (showOrderHistory) {
     return <OrderHistoryPage onBack={() => setShowOrderHistory(false)} />;
   }
@@ -228,98 +250,116 @@ function MainApp({ user, onLogout, onEditProfile }) {
 
   return (
     <div className="relay-app">
-      {/* [NEW] Add the PushNotificationManager to handle subscription */}
-      <PushNotificationManager />
+      {/* This new wrapper will contain the content that gets blurred */}
+      <div className={`app-content-wrap ${isMenuOpen ? "blurred" : ""}`}>
+        <PushNotificationManager />
 
-      {/* Enhanced Header */}
-      <header className="relay-header">
-        <div className="header-container">
-          {/* ... (rest of your header code is unchanged) ... */}
-          <div className={`connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
-            <div className="connection-dot"></div>
-          </div>
-          <div className="profile-section-new">
-            <div className="profile-avatar-container">
-              <img
-                src={
-                  user.profilePictureUrl ||
-                  `https://ui-avatars.com/api/?name=${user.displayName
-                    .split(" ")
-                    .join("+")}&background=6366f1&color=fff&format=svg`
-                }
-                alt="Profile"
-                className="profile-avatar-new"
-              />
-              <div className="avatar-ring"></div>
+        {/* Enhanced Header */}
+        <header className="relay-header">
+          <div className="header-container">
+            <div className={`connection-indicator ${isConnected ? "connected" : "disconnected"}`}>
+              <div className="connection-dot"></div>
             </div>
-            <div className="profile-info">
-              <h2 className="profile-name">{user.displayName}</h2>
-              <p className="profile-role">{view === 'sender' ? 'Sender' : 'Receiver'}</p>
+            <div className="profile-section-new">
+              <div className="profile-avatar-container">
+                <img
+                  src={
+                    user.profilePictureUrl ||
+                    `https://ui-avatars.com/api/?name=${user.displayName
+                      .split(" ")
+                      .join("+")}&background=6366f1&color=fff&format=svg`
+                  }
+                  alt="Profile"
+                  className="profile-avatar-new"
+                />
+                <div className="avatar-ring"></div>
+              </div>
+              <div className="profile-info">
+                <h2 className="profile-name">{user.displayName}</h2>
+                <p className="profile-role">{view === "sender" ? "Sender" : "Receiver"}</p>
+              </div>
             </div>
+            {/* New Hamburger Menu Button (Stays in header) */}
+            <button
+              className={`hamburger-btn ${isMenuOpen ? "open" : ""}`}
+              onClick={toggleMenu}
+              aria-label="Toggle menu"
+              aria-expanded={isMenuOpen}
+            >
+              <div className="hamburger-box">
+                <div className="hamburger-inner"></div>
+              </div>
+            </button>
           </div>
-          <div className="header-actions-new">
+        </header>
+
+        {/* Main Content */}
+        <main className="relay-main">
+          {view === "sender" ? (
+            <EnhancedSenderView
+              onEditPreset={(presetId) =>
+                setPresetManagerState({ isOpen: true, mode: "edit", presetId })
+              }
+              showToast={showToast}
+            />
+          ) : (
+            <EnhancedReceiverView showToast={showToast} />
+          )}
+        </main>
+      </div>
+
+      {/* Menu Overlay, Slide Menu, and Toast are now OUTSIDE the wrapper */}
+      <div className={`menu-overlay ${isMenuOpen ? "open" : ""}`} onClick={toggleMenu}></div>
+
+      <div className={`slide-menu ${isMenuOpen ? "open" : ""}`}>
+        <div className="slide-menu-header">
+          <h3 className="slide-menu-title">Menu</h3>
+        </div>
+        <nav className="slide-menu-nav">
+          <button
+            onClick={() => handleMenuClick(toggleTheme)}
+            className="header-btn theme-btn"
+            aria-label="Toggle theme"
+          >
+            <span className="btn-icon">{theme === "light" ? "🌙" : "☀️"}</span>
+            <span className="btn-text">Toggle Theme</span>
+          </button>
+          <button
+            onClick={() => handleMenuClick(() => setShowOrderHistory(true))}
+            className="header-btn history-btn"
+            title="Order History"
+          >
+            <span className="btn-icon">📋</span>
+            <span className="btn-text">Order History</span>
+          </button>
+          {view === "sender" && (
             <button
-              onClick={toggleTheme}
-              className="header-btn theme-btn"
-              aria-label="Toggle theme"
-            >
-              <span className="btn-icon">{theme === "light" ? "🌙" : "☀️"}</span>
-            </button>
-            <button
-              onClick={() => setShowOrderHistory(true)}
-              className="header-btn history-btn"
-              title="Order History"
-            >
-              <span className="btn-icon">📋</span>
-            </button>
-            {view === "sender" && (
-              <button
-                onClick={() =>
+              onClick={() =>
+                handleMenuClick(() =>
                   setPresetManagerState({
                     isOpen: true,
                     mode: "add",
                     presetId: null,
                   })
-                }
-                className="header-btn presets-btn"
-              >
-                <span className="btn-icon">⚙️</span>
-                <span className="btn-text">Presets</span>
-              </button>
-            )}
-            <button 
-              onClick={onEditProfile} 
-              className="header-btn edit-btn"
+                )
+              }
+              className="header-btn presets-btn"
             >
-              <span className="btn-icon">✏️</span>
-              <span className="btn-text">Edit</span>
+              <span className="btn-icon">⚙️</span>
+              <span className="btn-text">Manage Presets</span>
             </button>
-            <button 
-              onClick={onLogout} 
-              className="header-btn logout-btn"
-            >
-              <span className="btn-icon">🚪</span>
-              <span className="btn-text">Logout</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="relay-main">
-        {view === "sender" ? (
-          <EnhancedSenderView
-            onEditPreset={(presetId) =>
-              setPresetManagerState({ isOpen: true, mode: "edit", presetId })
-            }
-            showToast={showToast}
-          />
-        ) : (
-          <EnhancedReceiverView showToast={showToast} />
-        )}
-      </main>
-
-      {/* Toast Notifications */}
+          )}
+          <button onClick={() => handleMenuClick(onEditProfile)} className="header-btn edit-btn">
+            <span className="btn-icon">✏️</span>
+            <span className="btn-text">Edit Profile</span>
+          </button>
+          <button onClick={() => handleMenuClick(onLogout)} className="header-btn logout-btn">
+            <span className="btn-icon">🚪</span>
+            <span className="btn-text">Logout</span>
+          </button>
+        </nav>
+      </div>
+      
       <ToastNotification
         message={toast.message}
         type={toast.type}
@@ -975,7 +1015,8 @@ function EnhancedReceiverView({ showToast }) {
         setIsLoading(true);
         const orders = await apiRequest("/api/pending-orders", { token });
         if (orders) setPendingOrders(orders);
-      } catch (error) {
+      } catch (error)
+      {
         console.error("Failed to fetch pending orders:", error);
         showToast("Failed to load orders", "error");
       } finally {

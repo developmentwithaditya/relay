@@ -276,6 +276,21 @@ body {
   overflow-x: hidden;
 }
 
+/* This is the new wrapper for the content that will be blurred */
+.app-content-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  transition: transform var(--duration-normal) var(--ease-out), filter var(--duration-normal) var(--ease-out);
+}
+
+/* This class applies the blur/scale effect ONLY to the content wrapper */
+.app-content-wrap.blurred {
+  transform: scale(0.98);
+  filter: blur(2px); /* Reduced blur for better aesthetics */
+  pointer-events: none;
+}
+
 .relay-app::before {
   content: '';
   position: fixed;
@@ -473,9 +488,11 @@ body {
 .header-container {
   max-width: var(--container-2xl);
   margin: 0 auto;
-  padding: var(--space-4);
+  padding: 0 var(--space-4); /* Vertical padding will be handled by content */
+  height: var(--header-height);
   display: flex;
   align-items: center;
+  justify-content: space-between; /* Pushes items to the ends */
   gap: var(--space-4);
   position: relative;
   z-index: 1;
@@ -483,14 +500,13 @@ body {
 
 @media (min-width: 768px) {
   .header-container {
-    padding: var(--space-5) var(--space-6);
-    gap: var(--space-6);
+    padding: 0 var(--space-6);
   }
 }
 
 @media (min-width: 1024px) {
   .header-container {
-    padding: var(--space-6) var(--space-8);
+    padding: 0 var(--space-8);
   }
 }
 
@@ -626,92 +642,197 @@ body {
   }
 }
 
+/* header-actions-new is now the slide menu, so these styles are deprecated */
 .header-actions-new {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-shrink: 0;
+  /* No longer used in the header directly */
 }
 
-@media (min-width: 768px) {
-  .header-actions-new {
-    gap: var(--space-3);
-  }
-}
+/* =============================================================================
+   HAMBURGER MENU & SLIDE-OUT PANEL
+   ============================================================================= */
 
-.header-btn {
+/* Hamburger Button */
+.hamburger-btn {
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  color: var(--text-secondary);
+  background: transparent;
+  border: none;
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-out);
-  font-weight: 500;
-  font-size: var(--text-sm);
-  min-height: 40px;
+  z-index: 2010; /* Above header, below menu */
+  padding: 0;
+  transition: transform var(--duration-fast) var(--ease-out);
+  pointer-events: auto !important; /* Ensure it's always clickable */
+}
+
+.hamburger-btn:hover {
+  transform: scale(1.1);
+}
+
+.hamburger-box {
+  width: 28px;
+  height: 24px;
   position: relative;
-  overflow: hidden;
 }
 
-@media (min-width: 768px) {
-  .header-btn {
-    padding: var(--space-2-5) var(--space-3);
-    min-height: 44px;
-  }
+.hamburger-inner {
+  display: block;
+  top: 50%;
+  margin-top: -2px;
 }
 
-.header-btn::before {
-  content: '';
+.hamburger-inner,
+.hamburger-inner::before,
+.hamburger-inner::after {
+  width: 28px;
+  height: 3px;
+  background-color: var(--text-primary);
+  border-radius: var(--radius-full);
   position: absolute;
+  transition-property: transform, top, bottom;
+  transition-duration: 0.2s;
+  transition-timing-function: var(--ease-out);
+}
+
+.hamburger-inner::before,
+.hamburger-inner::after {
+  content: "";
+  display: block;
+}
+
+.hamburger-inner::before {
+  top: -10px;
+}
+
+.hamburger-inner::after {
+  bottom: -10px;
+}
+
+/* Hamburger animation to 'X' */
+.hamburger-btn.open .hamburger-inner {
+  transform: rotate(45deg);
+  transition-delay: 0.1s;
+}
+
+.hamburger-btn.open .hamburger-inner::before {
   top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: var(--gradient-primary);
-  transition: left var(--duration-normal) var(--ease-out);
-  opacity: 0.1;
+  transform: rotate(-90deg);
+  transition: top 0.1s ease-out, transform 0.2s var(--ease-bounce) 0.1s;
 }
 
-.header-btn:hover::before {
+.hamburger-btn.open .hamburger-inner::after {
+  bottom: 0;
+  /* No rotation needed, just fade out or move */
+  opacity: 0;
+  transform: rotate(90deg);
+  transition: bottom 0.1s ease-out, opacity 0.1s ease-out, transform 0.2s var(--ease-bounce) 0.1s;
+}
+
+/* Menu Overlay */
+.menu-overlay {
+  position: fixed;
+  top: 0;
   left: 0;
+  width: 100vw;
+  height: 100dvh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1999; /* Below slide menu */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-normal) var(--ease-out);
+  pointer-events: auto !important; /* Allow clicks to close */
 }
 
-.header-btn:hover {
-  transform: translateY(-2px);
+.menu-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Slide-out Menu */
+.slide-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  max-width: 85vw;
+  height: 100dvh;
+  background: var(--bg-glass);
+  backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: var(--shadow-2xl);
+  z-index: 2000;
+  transform: translateX(100%);
+  transition: transform var(--duration-normal) var(--ease-out);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-subtle);
+  pointer-events: auto !important; /* Allow interaction with menu */
+}
+
+.slide-menu.open {
+  transform: translateX(0);
+}
+
+.slide-menu-header {
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.slide-menu-title {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.075em;
+}
+
+.slide-menu-nav {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+/* Redefine header-btn styles for menu context */
+.slide-menu .header-btn {
+  display: flex;
+  justify-content: flex-start; /* Align text to the left */
+  align-items: center;
+  gap: var(--space-4); /* More space between icon and text */
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  min-height: 52px;
+  width: 100%; /* Full width */
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+}
+
+.slide-menu .header-btn .btn-text {
+  display: inline-block; /* Ensure text is visible */
+  font-weight: 600;
+}
+
+.slide-menu .header-btn .btn-icon {
+  font-size: var(--text-xl);
+  width: 24px; /* fixed width for icon alignment */
+  text-align: center;
+}
+
+.slide-menu .header-btn:hover {
+  transform: translateX(4px);
   box-shadow: var(--shadow-md);
   border-color: var(--primary-500);
   color: var(--primary-600);
-}
-
-.header-btn.theme-btn:hover {
-  background: var(--gradient-primary);
-  color: var(--text-inverse);
-}
-
-.header-btn.logout-btn:hover {
-  background: var(--gradient-error);
-  color: var(--text-inverse);
-  border-color: var(--error-500);
-}
-
-.btn-icon {
-  font-size: var(--text-lg);
-  line-height: 1;
+  background: var(--bg-tertiary);
 }
 
 .btn-text {
-  display: none;
-}
-
-@media (min-width: 640px) {
-  .btn-text {
-    display: inline;
-  }
+  /* This was previously hidden on small screens */
+  display: inline;
 }
 
 /* =============================================================================
@@ -2797,5 +2918,49 @@ body {
 @container (min-width: 1024px) {
   .container-responsive {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Ensure you have this section at the end of the file */
+/* =============================================================================
+   RESPONSIVE UTILITIES
+   ============================================================================= */
+@media (max-width: 640px) {
+  .toast-notification {
+    top: var(--space-4);
+    right: var(--space-4);
+    left: var(--space-4);
+    max-width: none;
+  }
+  
+  .modal-overlay {
+    padding: var(--space-2);
+  }
+  
+  .items-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+  
+  .preset-actions {
+    flex-direction: column;
+  }
+  
+  .quantity-controls {
+    flex-shrink: 0;
+  }
+  
+  .item-controls {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+  
+  .order-history-container,
+  .preset-manager-container {
+    width: 100%;
   }
 }
