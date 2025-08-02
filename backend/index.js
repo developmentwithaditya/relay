@@ -146,30 +146,142 @@ app.patch("/api/profile", authMiddleware, parser.single("profilePicture"), async
 app.get("/api/users/search", authMiddleware, async (req, res) => {
   try {
     const { email } = req.query;
-    const potentialPartner = await User.findOne({ email, _id: { $ne: req.user.userId } }).select("email role displayName");
-    if (!potentialPartner) return res.status(404).json({ message: "User not found." });
+    const currentUser = await User.findById(req.user.userId).select("role");
+    
+    // **NEW**: Only senders can search for users
+    if (currentUser.role !== 'sender') {
+      return res.status(403).json({ message: "Only senders can search for partners." });
+    }
+    
+    // **NEW**: Only allow searching for receivers
+    const potentialPartner = await User.findOne({ 
+      email, 
+      _id: { $ne: req.user.userId },
+      role: 'receiver' // **NEW**: Only find receivers
+    }).select("email role displayName profilePictureUrl");
+    
+    if (!potentialPartner) return res.status(404).json({ message: "No receiver found with that email." });
     res.json(potentialPartner);
   } catch (error) {
     res.status(500).json({ message: "Error searching for user." });
   }
 });
+
 app.post("/api/connect/request", authMiddleware, async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.body.targetUserId, { $addToSet: { pendingRequests: req.user.userId } });
-    res.json({ message: "Connection request sent." });
+    const { targetUserId } = req.body;
+    const sender = await User.findById(req.user.userId).select("email role displayName profilePictureUrl");
+    
+    // **NEW**: Only senders can send connection requests
+    if (sender.role !== 'sender') {
+      return res.status(403).json({ message: "Only senders can send connection requests." });
+    }
+    
+    // **NEW**: Verify target is a receiver
+    const target = await User.findById(targetUserId).select("role");
+    if (!target || target.role !== 'receiver') {
+      return res.status(400).json({ message: "Can only send requests to receivers." });
+    }
+    
+    await User.findByIdAndUpdate(targetUserId, { 
+      $addToSet: { 
+        pendingRequests: {
+          _id: req.user.userId,
+          email: sender.email,
+          role: sender.role,
+          displayName: sender.displayName,
+          profilePictureUrl: sender.profilePictureUrl,
+          requestedAt: new Date()
+        }
+      } 
+    });
+    
+    // Notify the target user via socket if they're online
+    const targetSocketId = userSockets[targetUserId];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("connection_request_received", {
+        from: sender,
+        message: `${sender.displayName} wants to connect with you!`
+      });
+    }
+    
+    res.json({ message: "Connection request sent to receiver." });
   } catch (error) {
     res.status(500).json({ message: "Error sending request." });
   }
 });
+
 app.post("/api/connect/accept", authMiddleware, async (req, res) => {
   try {
     const { requesterId } = req.body;
     const currentUserId = req.user.userId;
-    await User.findByIdAndUpdate(currentUserId, { partnerId: requesterId, $pull: { pendingRequests: requesterId } });
+    
+    const accepter = await User.findById(currentUserId).select("displayName role");
+    const requester = await User.findById(requesterId).select("displayName role");
+    
+    // **NEW**: Only receivers can accept requests, only from senders
+    if (accepter.role !== 'receiver') {
+      return res.status(403).json({ message: "Only receivers can accept connection requests." });
+    }
+    
+    if (!requester || requester.role !== 'sender') {
+      return res.status(400).json({ message: "Invalid request - requester must be a sender." });
+    }
+    
+    await User.findByIdAndUpdate(currentUserId, { 
+      partnerId: requesterId, 
+      $pull: { pendingRequests: { _id: requesterId } }
+    });
     await User.findByIdAndUpdate(requesterId, { partnerId: currentUserId });
+    
+    // Notify the requester that their request was accepted
+    const requesterSocketId = userSockets[requesterId];
+    if (requesterSocketId) {
+      io.to(requesterSocketId).emit("connection_request_accepted", {
+        message: `${accepter.displayName} has accepted your connection request! 🎉`,
+        partnerId: currentUserId
+      });
+    }
+    
     res.json({ message: "Connection successful!" });
   } catch (error) {
     res.status(500).json({ message: "Error accepting request." });
+  }
+});
+
+app.post("/api/connect/reject", authMiddleware, async (req, res) => {
+  try {
+    const { requesterId } = req.body;
+    const currentUserId = req.user.userId;
+    
+    const rejecter = await User.findById(currentUserId).select("displayName role");
+    const requester = await User.findById(requesterId).select("displayName role");
+    
+    // **NEW**: Only receivers can reject requests, only from senders
+    if (rejecter.role !== 'receiver') {
+      return res.status(403).json({ message: "Only receivers can reject connection requests." });
+    }
+    
+    if (!requester || requester.role !== 'sender') {
+      return res.status(400).json({ message: "Invalid request - requester must be a sender." });
+    }
+    
+    await User.findByIdAndUpdate(currentUserId, { 
+      $pull: { pendingRequests: { _id: requesterId } }
+    });
+    
+    // Notify the requester that their request was rejected
+    const requesterSocketId = userSockets[requesterId];
+    if (requesterSocketId) {
+      io.to(requesterSocketId).emit("connection_request_rejected", {
+        message: `${rejecter.displayName} has rejected your connection request.`,
+        requesterId: currentUserId
+      });
+    }
+    
+    res.json({ message: "Connection request rejected." });
+  } catch (error) {
+    res.status(500).json({ message: "Error rejecting request." });
   }
 });
 
