@@ -174,6 +174,43 @@ app.patch("/api/profile", authMiddleware, parser.single("profilePicture"), async
     }
 });
 
+// [DELETE] /api/profile - New Route for Account Deletion
+app.delete("/api/profile", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // 1. Disconnect the partner if one exists
+    if (user.partnerId) {
+      await User.findByIdAndUpdate(user.partnerId, { $set: { partnerId: null } });
+    }
+
+    // 2. Remove this user from anyone else's pending connection requests
+    await User.updateMany(
+      { 'pendingRequests': userId },
+      { $pull: { 'pendingRequests': userId } }
+    );
+
+    // 3. Delete all orders associated with the user (as sender or receiver)
+    await Order.deleteMany({
+      $or: [{ senderId: userId }, { receiverId: userId }],
+    });
+
+    // 4. Delete the user document
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({ message: "Account and all associated data deleted successfully." });
+
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    res.status(500).json({ message: "Server error while deleting account." });
+  }
+});
+
 // --- Connection Endpoints ---
 app.get("/api/users/search", authMiddleware, async (req, res) => {
   try {

@@ -4,7 +4,8 @@ import apiRequest from './services/api';
 import './EditProfilePage.css';
 
 function EditProfilePage({ onBack }) {
-  const { user, token, refreshUserData } = useContext(AuthContext);
+  // 1. Add 'logout' to the context destructuring
+  const { user, token, refreshUserData, logout } = useContext(AuthContext);
   const fileInputRef = useRef(null);
 
   // State management
@@ -153,6 +154,31 @@ function EditProfilePage({ onBack }) {
       setIsLoading(false);
     }
   };
+  
+  // 2. Add the delete account handler
+  const handleDeleteAccount = async () => {
+    const confirmationMessage = 
+      "Are you absolutely sure you want to delete your account?\n\n" +
+      "This will permanently erase your profile, connection, and all order history.\n\n" +
+      "THIS ACTION CANNOT BE UNDONE.";
+      
+    if (window.confirm(confirmationMessage)) {
+      setIsLoading(true);
+      try {
+        await apiRequest('/api/profile', {
+          method: 'DELETE',
+          token,
+        });
+        showNotification('info', 'Account deleted. You will be logged out.');
+        setTimeout(() => {
+          logout(); // Log out and redirect to home
+        }, 2500);
+      } catch (err) {
+        showNotification('error', `Failed to delete account: ${err.message}`);
+        setIsLoading(false);
+      }
+    }
+  };
 
   const getAvatarUrl = () => {
     return previewUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.displayName)}&background=6366f1&color=ffffff&size=200`;
@@ -289,6 +315,22 @@ function EditProfilePage({ onBack }) {
                 <span className="error-text">{validationErrors.confirmPassword}</span>
               )}
             </div>
+          </div>
+
+          {/* 3. Add the Danger Zone section */}
+          <div className="form-section delete-account-section">
+            <h3>Danger Zone</h3>
+            <p className="section-description">
+              This action is permanent and cannot be undone. All your data, including your profile, partner connection, and order history, will be removed forever.
+            </p>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={isLoading}
+              className="btn btn-danger"
+            >
+              Delete My Account
+            </button>
           </div>
 
           {/* Actions */}

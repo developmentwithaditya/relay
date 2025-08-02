@@ -397,3 +397,40 @@
     margin: 1rem;
   }
 }
+/* Delete Account Section */
+.delete-account-section {
+  border-top: 1px solid #e5e7eb;
+  background-color: #fef2f2;
+  border-left: 4px solid #ef4444;
+  margin: 0 2rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+}
+
+.delete-account-section h3 {
+  color: #b91c1c;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+  width: 100%;
+  justify-content: center;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+}
+
+@media (max-width: 768px) {
+  .delete-account-section {
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
