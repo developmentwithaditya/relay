@@ -1,4 +1,3 @@
-// frontend/src/App.jsx
 import React, { useState, useEffect, useContext, useMemo, useRef } from "react";
 import { AuthContext } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
@@ -12,40 +11,124 @@ import PresetManagerPage from "./PresetManagerPage";
 import OrderHistoryPage from './OrderHistoryPage';
 import "./App.css";
 
-// --- MainApp Component (For connected users) ---
+// --- Enhanced Loading Component ---
+function LoadingScreen({ message = "Loading Relay..." }) {
+  return (
+    <div className="loading-screen">
+      <div className="loading-container">
+        <div className="loading-logo">
+          <div className="relay-icon">
+            <div className="pulse-rings">
+              <div className="pulse-ring"></div>
+              <div className="pulse-ring"></div>
+              <div className="pulse-ring"></div>
+            </div>
+            <div className="relay-symbol">⚡</div>
+          </div>
+        </div>
+        <h1 className="loading-title">{message}</h1>
+        <div className="loading-bar">
+          <div className="loading-progress"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Enhanced Status Badge Component ---
+function StatusBadge({ status, className = "" }) {
+  const statusConfig = {
+    sending: { icon: "⏳", text: "Sending", class: "status-sending" },
+    pending: { icon: "📤", text: "Sent", class: "status-pending" },
+    acknowledged: { icon: "✅", text: "Seen", class: "status-acknowledged" },
+    rejected: { icon: "❌", text: "Rejected", class: "status-rejected" }
+  };
+
+  const config = statusConfig[status] || statusConfig.pending;
+
+  return (
+    <div className={`status-badge ${config.class} ${className}`}>
+      <span className="status-icon">{config.icon}</span>
+      <span className="status-text">{config.text}</span>
+    </div>
+  );
+}
+
+// --- Enhanced Toast Notification Component ---
+function ToastNotification({ message, type = "info", isVisible, onClose }) {
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(onClose, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, onClose]);
+
+  if (!isVisible) return null;
+
+  return (
+    <div className={`toast-notification toast-${type} ${isVisible ? 'toast-show' : ''}`}>
+      <div className="toast-content">
+        <span className="toast-icon">
+          {type === 'success' && '✅'}
+          {type === 'error' && '❌'}
+          {type === 'warning' && '⚠️'}
+          {type === 'info' && 'ℹ️'}
+        </span>
+        <span className="toast-message">{message}</span>
+      </div>
+      <button className="toast-close" onClick={onClose}>×</button>
+    </div>
+  );
+}
+
+// --- MainApp Component (Completely Redesigned) ---
 function MainApp({ user, onLogout, onEditProfile }) {
   const { theme, toggleTheme } = useTheme();
   const view = user.role;
   const [isConnected, setIsConnected] = useState(socket.connected);
-
+  const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+  
   const [presetManagerState, setPresetManagerState] = useState({
     isOpen: false,
     mode: "add",
     presetId: null,
   });
 
-  // **NEW**: Order history state
-  const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const showToast = (message, type = "info") => {
+    setToast({ show: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, show: false }));
+  };
 
   useEffect(() => {
     const registerSocket = () => {
       if (user?._id) socket.emit("register_socket", user._id);
     };
+    
     const onConnect = () => {
       setIsConnected(true);
       registerSocket();
+      showToast("Connected to Relay", "success");
     };
-    const onDisconnect = () => setIsConnected(false);
+    
+    const onDisconnect = () => {
+      setIsConnected(false);
+      showToast("Connection lost. Reconnecting...", "warning");
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     if (socket.connected) registerSocket();
+    
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
     };
   }, [user]);
 
-  // **NEW**: Handle order history page
   if (showOrderHistory) {
     return <OrderHistoryPage onBack={() => setShowOrderHistory(false)} />;
   }
@@ -63,122 +146,128 @@ function MainApp({ user, onLogout, onEditProfile }) {
   }
 
   return (
-    <div className="app-container">
-      <div className="app-header-main">
-        <div className="profile-section">
-          <img
-            src={
-              user.profilePictureUrl ||
-              `https://ui-avatars.com/api/?name=${user.displayName
-                .split(" ")
-                .join("+")}&background=random&color=fff`
-            }
-            alt="Profile"
-            className="header-avatar"
-          />
-          <span>{user.displayName}</span>
-        </div>
-        <div className="header-actions">
-          <button
-            onClick={toggleTheme}
-            className="theme-toggle-button"
-            aria-label="Toggle theme"
-          >
-            {theme === "light" ? "🌙" : "☀️"}
-          </button>
-          {/* **NEW**: Order History button */}
-          <button
-            onClick={() => setShowOrderHistory(true)}
-            className="history-button"
-            title="View Order History"
-          >
-            📋
-          </button>
-          {view === "sender" && (
+    <div className="relay-app">
+      {/* Enhanced Header */}
+      <header className="relay-header">
+        <div className="header-container">
+          {/* Connection Status Indicator */}
+          <div className={`connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
+            <div className="connection-dot"></div>
+          </div>
+
+          {/* Profile Section */}
+          <div className="profile-section-new">
+            <div className="profile-avatar-container">
+              <img
+                src={
+                  user.profilePictureUrl ||
+                  `https://ui-avatars.com/api/?name=${user.displayName
+                    .split(" ")
+                    .join("+")}&background=6366f1&color=fff&format=svg`
+                }
+                alt="Profile"
+                className="profile-avatar-new"
+              />
+              <div className="avatar-ring"></div>
+            </div>
+            <div className="profile-info">
+              <h2 className="profile-name">{user.displayName}</h2>
+              <p className="profile-role">{view === 'sender' ? 'Sender' : 'Receiver'}</p>
+            </div>
+          </div>
+
+          {/* Header Actions */}
+          <div className="header-actions-new">
             <button
-              onClick={() =>
-                setPresetManagerState({
-                  isOpen: true,
-                  mode: "add",
-                  presetId: null,
-                })
-              }
-              className="manage-presets-button"
+              onClick={toggleTheme}
+              className="header-btn theme-btn"
+              aria-label="Toggle theme"
             >
-              Manage Presets
+              <span className="btn-icon">{theme === "light" ? "🌙" : "☀️"}</span>
             </button>
-          )}
-          <button onClick={onEditProfile} className="edit-profile-button">
-            Edit
-          </button>
-          <button onClick={onLogout} className="logout-button">
-            Logout
-          </button>
+            
+            <button
+              onClick={() => setShowOrderHistory(true)}
+              className="header-btn history-btn"
+              title="Order History"
+            >
+              <span className="btn-icon">📋</span>
+            </button>
+            
+            {view === "sender" && (
+              <button
+                onClick={() =>
+                  setPresetManagerState({
+                    isOpen: true,
+                    mode: "add",
+                    presetId: null,
+                  })
+                }
+                className="header-btn presets-btn"
+              >
+                <span className="btn-icon">⚙️</span>
+                <span className="btn-text">Presets</span>
+              </button>
+            )}
+            
+            <button 
+              onClick={onEditProfile} 
+              className="header-btn edit-btn"
+            >
+              <span className="btn-icon">✏️</span>
+              <span className="btn-text">Edit</span>
+            </button>
+            
+            <button 
+              onClick={onLogout} 
+              className="header-btn logout-btn"
+            >
+              <span className="btn-icon">🚪</span>
+              <span className="btn-text">Logout</span>
+            </button>
+          </div>
         </div>
-      </div>
-      {view === "sender" ? (
-        <SenderView
-          onEditPreset={(presetId) =>
-            setPresetManagerState({ isOpen: true, mode: "edit", presetId })
-          }
-        />
-      ) : (
-        <ReceiverView />
-      )}
+      </header>
+
+      {/* Main Content */}
+      <main className="relay-main">
+        {view === "sender" ? (
+          <EnhancedSenderView
+            onEditPreset={(presetId) =>
+              setPresetManagerState({ isOpen: true, mode: "edit", presetId })
+            }
+            showToast={showToast}
+          />
+        ) : (
+          <EnhancedReceiverView showToast={showToast} />
+        )}
+      </main>
+
+      {/* Toast Notifications */}
+      <ToastNotification
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.show}
+        onClose={hideToast}
+      />
     </div>
   );
 }
 
-
-// --- App Component (The Master Router) ---
-function App() {
-  const { isLoggedIn, user, logout, authReady } = useContext(AuthContext);
-  const [publicPage, setPublicPage] = useState("home");
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-
-  if (!authReady)
-    return (
-      <div className="loading-fullscreen">
-        <h1>Loading Relay...</h1>
-      </div>
-    );
-  if (isLoggedIn && isEditingProfile)
-    return <EditProfilePage onBack={() => setIsEditingProfile(false)} />;
-  if (isLoggedIn && user)
-    return user.partnerId ? (
-      <MainApp
-        user={user}
-        onLogout={logout}
-        onEditProfile={() => setIsEditingProfile(true)}
-      />
-    ) : (
-      <ConnectPage />
-    );
-  if (publicPage === "auth") return <AuthPage />;
-  return <HomePage onGetStarted={() => setPublicPage("auth")} />;
-}
-
-// --- SenderView ---
-// --- SenderView ---
-function SenderView({ onEditPreset }) {
+// --- Enhanced Sender View ---
+function EnhancedSenderView({ onEditPreset, showToast }) {
   const { user, token, refreshUserData } = useContext(AuthContext);
   const [sentOrders, setSentOrders] = useState([]);
   const [quickRequestItems, setQuickRequestItems] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [customItemName, setCustomItemName] = useState("");
-
-  // **NEW**: State to track individual item statuses on sender side
   const [senderItemStatuses, setSenderItemStatuses] = useState({});
-
-  // **NEW**: State and ref for rate limiting
   const [requestTimestamps, setRequestTimestamps] = useState([]);
   const [cooldownTime, setCooldownTime] = useState(0);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
   const cooldownIntervalRef = useRef(null);
 
-  // **NEW**: Loading state for initial fetch
-  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
-
-  // **NEW**: Effect to manage the cooldown timer
+  // Cooldown timer effect
   useEffect(() => {
     if (cooldownTime > 0) {
       cooldownIntervalRef.current = setInterval(() => {
@@ -190,7 +279,7 @@ function SenderView({ onEditPreset }) {
     return () => clearInterval(cooldownIntervalRef.current);
   }, [cooldownTime]);
 
-  // **NEW**: Fetch pending orders on component mount
+  // Fetch pending orders
   useEffect(() => {
     const fetchPendingOrders = async () => {
       if (!token) return;
@@ -198,23 +287,23 @@ function SenderView({ onEditPreset }) {
         setIsLoadingOrders(true);
         const orders = await apiRequest("/api/pending-orders/sent", { token });
         if (orders && orders.length > 0) {
-          // Transform orders to match the expected format
           const transformedOrders = orders.map(order => ({
             ...order,
-            status: 'pending', // Ensure status is set
-            itemFeedback: [] // Initialize empty feedback array
+            status: 'pending',
+            itemFeedback: []
           }));
           setSentOrders(transformedOrders);
         }
       } catch (error) {
         console.error("Failed to fetch pending orders:", error);
+        showToast("Failed to load orders", "error");
       } finally {
         setIsLoadingOrders(false);
       }
     };
 
     fetchPendingOrders();
-  }, [token]);
+  }, [token, showToast]);
 
   const presetsByCategory = useMemo(() => {
     if (!user?.presets) return {};
@@ -235,6 +324,7 @@ function SenderView({ onEditPreset }) {
     return [...MENU_ITEMS, ...userCustomItems];
   }, [user.customItems]);
 
+  // Socket event handlers
   useEffect(() => {
     const handleOrderSaved = ({ tempId, dbId }) => {
       setSentOrders((prev) =>
@@ -242,13 +332,13 @@ function SenderView({ onEditPreset }) {
           o.tempId === tempId ? { ...o, _id: dbId, status: "pending" } : o
         )
       );
+      showToast("Order sent successfully!", "success");
     };
 
     const handleOrderAcknowledged = (id) => {
       setSentOrders((prev) =>
         prev.map((o) => (o._id === id ? { ...o, status: "acknowledged" } : o))
       );
-      // **NEW**: Clear item statuses for acknowledged orders
       setSenderItemStatuses((prev) => {
         const newStatuses = { ...prev };
         Object.keys(newStatuses).forEach((key) => {
@@ -258,7 +348,7 @@ function SenderView({ onEditPreset }) {
         });
         return newStatuses;
       });
-      // **MODIFIED**: Remove from list after shorter delay for better UX
+      showToast("Order acknowledged!", "success");
       setTimeout(
         () => setSentOrders((prev) => prev.filter((o) => o._id !== id)),
         2000
@@ -269,7 +359,6 @@ function SenderView({ onEditPreset }) {
       setSentOrders((prev) =>
         prev.map((o) => (o._id === id ? { ...o, status: "rejected" } : o))
       );
-      // **NEW**: Clear item statuses for rejected orders
       setSenderItemStatuses((prev) => {
         const newStatuses = { ...prev };
         Object.keys(newStatuses).forEach((key) => {
@@ -279,14 +368,13 @@ function SenderView({ onEditPreset }) {
         });
         return newStatuses;
       });
-      // **MODIFIED**: Remove from list after shorter delay
+      showToast("Order was rejected", "error");
       setTimeout(
         () => setSentOrders((prev) => prev.filter((o) => o._id !== id)),
         5000
       );
     };
 
-    // **ENHANCED**: Individual item feedback with visual status tracking
     const handleItemAcknowledged = ({ orderId, itemName, receiverName }) => {
       setSentOrders((prev) =>
         prev.map((o) => {
@@ -300,7 +388,6 @@ function SenderView({ onEditPreset }) {
           return o;
         })
       );
-      // **NEW**: Update sender item status for visual feedback
       setSenderItemStatuses((prev) => ({
         ...prev,
         [`${orderId}-${itemName}`]: "acknowledged",
@@ -320,18 +407,14 @@ function SenderView({ onEditPreset }) {
           return o;
         })
       );
-      // **NEW**: Update sender item status for visual feedback
       setSenderItemStatuses((prev) => ({
         ...prev,
         [`${orderId}-${itemName}`]: "rejected",
       }));
     };
 
-    // **NEW**: Listen for queue full event from server
     const handleQueueFull = () => {
-      alert(
-        "Your partner's request queue is full. Please wait for them to clear some requests."
-      );
+      showToast("Receiver's queue is full. Please wait.", "warning");
     };
 
     socket.on("order_saved", handleOrderSaved);
@@ -349,7 +432,7 @@ function SenderView({ onEditPreset }) {
       socket.off("sender_item_rejected", handleItemRejected);
       socket.off("queue_full", handleQueueFull);
     };
-  }, [user]);
+  }, [user, showToast]);
 
   const handleQuickItemChange = (itemId, newQuantity) => {
     const qty = Math.max(0, newQuantity);
@@ -371,6 +454,7 @@ function SenderView({ onEditPreset }) {
       }));
       setCustomItemName("");
       setIsModalOpen(false);
+      showToast("Custom item added!", "success");
     }
   };
 
@@ -382,15 +466,16 @@ function SenderView({ onEditPreset }) {
         body: { itemName },
       });
       await refreshUserData();
+      showToast("Item saved to your collection!", "success");
     } catch (error) {
       console.error("Failed to save item:", error);
-      alert(error.message);
+      showToast("Failed to save item", "error");
     }
   };
 
   const handleDeleteSavedItem = async (itemName) => {
     if (
-      !window.confirm(`Permanently delete "${itemName}" from your saved items?`)
+      !window.confirm(`Remove "${itemName}" from your saved items?`)
     )
       return;
     try {
@@ -399,22 +484,19 @@ function SenderView({ onEditPreset }) {
         token,
       });
       await refreshUserData();
+      showToast("Item removed", "info");
     } catch (error) {
       console.error("Failed to delete item:", error);
-      alert(error.message);
+      showToast("Failed to remove item", "error");
     }
   };
 
-    const sendOrder = (items) => {
-    // 1. Check if currently in cooldown
+  const sendOrder = (items) => {
     if (cooldownTime > 0) {
-      alert(
-        `Please wait ${cooldownTime} more seconds before sending another request.`
-      );
+      showToast(`Please wait ${cooldownTime} more seconds`, "warning");
       return;
     }
 
-    // 2. Check the rate limit (5 requests in 15 seconds)
     const now = Date.now();
     const fifteenSecondsAgo = now - 15000;
     const recentRequests = requestTimestamps.filter(
@@ -422,13 +504,12 @@ function SenderView({ onEditPreset }) {
     );
 
     if (recentRequests.length >= 5) {
-      alert("You have sent too many requests. Please wait 15 seconds.");
+      showToast("Too many requests. Please wait 15 seconds.", "warning");
       setCooldownTime(15);
       setRequestTimestamps(recentRequests);
       return;
     }
 
-    // 3. Proceed with sending the order
     let itemsToSend = {};
     if (Array.isArray(items)) {
       itemsToSend = items.reduce(
@@ -438,6 +519,7 @@ function SenderView({ onEditPreset }) {
     } else {
       itemsToSend = items;
     }
+    
     if (Object.keys(itemsToSend).length > 0 && user?._id) {
       const tempId = `temp_${Date.now()}`;
       const tempOrder = { 
@@ -447,7 +529,7 @@ function SenderView({ onEditPreset }) {
         itemFeedback: [],
         createdAt: new Date().toISOString()
       };
-      setSentOrders((prev) => [tempOrder, ...prev]); // **MODIFIED**: Add to beginning
+      setSentOrders((prev) => [tempOrder, ...prev]);
       socket.emit("send_order", {
         items: itemsToSend,
         senderId: user._id,
@@ -458,9 +540,6 @@ function SenderView({ onEditPreset }) {
     }
   };
 
-  const isSendDisabled = cooldownTime > 0;
-
-    // **NEW**: Helper function to format order timestamp
   const formatOrderTime = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -471,274 +550,338 @@ function SenderView({ onEditPreset }) {
     });
   };
 
-return (
-    <>
+  const isSendDisabled = cooldownTime > 0;
+
+  return (
+    <div className="sender-view">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-title-section">
+          <h1 className="page-title">Send Request</h1>
+          <p className="page-subtitle">
+            To: <span className="partner-name">{user.partnerId?.displayName || "Loading..."}</span>
+          </p>
+        </div>
+        {cooldownTime > 0 && (
+          <div className="cooldown-indicator">
+            <div className="cooldown-timer">{cooldownTime}s</div>
+            <div className="cooldown-text">Rate Limited</div>
+          </div>
+        )}
+      </div>
+
+      {/* Order Status Section */}
+      <section className="orders-section">
+        <div className="section-header">
+          <h2 className="section-title">
+            Your Orders
+            {sentOrders.length > 0 && (
+              <span className="orders-count">{sentOrders.length}</span>
+            )}
+          </h2>
+        </div>
+        
+        <div className="orders-container">
+          {isLoadingOrders ? (
+            <div className="orders-loading">
+              <div className="loading-spinner"></div>
+              <p>Loading your orders...</p>
+            </div>
+          ) : sentOrders.length > 0 ? (
+            <div className="orders-list">
+              {sentOrders.map((order) => (
+                <div
+                  key={order.tempId || order._id}
+                  className={`order-card-new ${order.status}`}
+                >
+                  <div className="order-header-new">
+                    <StatusBadge status={order.status} />
+                    <span className="order-timestamp">
+                      {formatOrderTime(order.createdAt)}
+                    </span>
+                  </div>
+
+                  {order.status !== "rejected" && (
+                    <div className="order-items-list">
+                      {Object.entries(order.items).map(([name, qty]) => {
+                        const itemStatus = senderItemStatuses[`${order._id}-${name}`];
+                        const menuItem = MENU_ITEMS.find((i) => i.id == name);
+                        return (
+                          <div
+                            key={name}
+                            className={`order-item ${itemStatus || ""}`}
+                          >
+                            <div className="item-info">
+                              <span className="item-icon">
+                                {menuItem?.icon || "📝"}
+                              </span>
+                              <span className="item-name">
+                                {menuItem?.name || name}
+                              </span>
+                              <span className="item-quantity">×{qty}</span>
+                            </div>
+                            <div className="item-status">
+                              {itemStatus === "acknowledged" && (
+                                <div className="status-indicator-new acknowledged">✓</div>
+                              )}
+                              {itemStatus === "rejected" && (
+                                <div className="status-indicator-new rejected">✗</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {order.itemFeedback && order.itemFeedback.length > 0 && (
+                    <div className="feedback-section">
+                      {order.itemFeedback.map((msg, index) => {
+                        const isAcknowledged = msg.includes("acknowledged");
+                        return (
+                          <div
+                            key={index}
+                            className={`feedback-item ${isAcknowledged ? "positive" : "negative"}`}
+                          >
+                            <span className="feedback-icon">
+                              {isAcknowledged ? "✅" : "❌"}
+                            </span>
+                            <span className="feedback-text">{msg}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">📤</div>
+              <h3>No Orders Yet</h3>
+              <p>Send your first request below!</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Presets Section */}
+      <section className="presets-section-new">
+        <div className="section-header">
+          <h2 className="section-title">Quick Presets</h2>
+        </div>
+        
+        {user.presets?.length > 0 ? (
+          <div className="presets-container">
+            {Object.keys(presetsByCategory).map((category) => (
+              <div key={category} className="preset-category-new">
+                <h3 className="category-title">{category}</h3>
+                <div className="presets-grid">
+                  {presetsByCategory[category].map((preset) => (
+                    <div key={preset._id} className="preset-card-new">
+                      <div className="preset-content">
+                        <h4 className="preset-name-new">{preset.name}</h4>
+                        <div className="preset-items-preview">
+                          {preset.customItems.slice(0, 3).map((item, index) => (
+                            <span key={index} className="preview-item">
+                              {MENU_ITEMS.find(i => i.name === item.name)?.icon || "📝"}
+                            </span>
+                          ))}
+                          {preset.customItems.length > 3 && (
+                            <span className="more-items">+{preset.customItems.length - 3}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="preset-actions">
+                        <button
+                          onClick={() => onEditPreset(preset._id)}
+                          className="preset-btn edit-preset-btn"
+                          disabled={isSendDisabled}
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => sendOrder(preset.customItems)}
+                          className="preset-btn send-preset-btn"
+                          disabled={isSendDisabled}
+                        >
+                          🚀
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-presets">
+            <div className="empty-icon">⚙️</div>
+            <p>Create presets to send common orders quickly!</p>
+          </div>
+        )}
+      </section>
+
+      {/* Quick Request Builder */}
+      <section className="quick-request-section">
+        <div className="section-header">
+          <h2 className="section-title">Quick Request</h2>
+          <button
+            className="add-custom-btn"
+            onClick={() => setIsModalOpen(true)}
+          >
+            <span className="btn-icon">➕</span>
+            <span className="btn-text">Custom Item</span>
+          </button>
+        </div>
+
+        {/* Available Items Grid */}
+        <div className="items-grid">
+          {availableItems.map((item) => (
+            <div key={item.id} className="item-tile-container">
+              <button
+                className="item-tile"
+                onClick={() =>
+                  setQuickRequestItems((p) => ({
+                    ...p,
+                    [item.name]: (p[item.name] || 0) + 1,
+                  }))
+                }
+              >
+                <span className="tile-icon">{item.icon}</span>
+                <span className="tile-name">{item.name}</span>
+              </button>
+              {item.isCustom && (
+                <button
+                  className="delete-item-btn"
+                  onClick={() => handleDeleteSavedItem(item.name)}
+                  title="Remove from saved items"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Current Request */}
+        <div className="current-request">
+          <h3 className="request-title">Current Request</h3>
+          {Object.keys(quickRequestItems).length > 0 ? (
+            <div className="request-items">
+              {Object.entries(quickRequestItems).map(([name, qty]) => {
+                const isSaved = user.customItems?.includes(name);
+                const isPredefined = MENU_ITEMS.some((i) => i.name === name);
+                const menuItem = MENU_ITEMS.find((i) => i.name === name);
+                
+                return (
+                  <div key={name} className="request-item">
+                    <div className="item-details">
+                      <span className="item-icon-small">
+                        {menuItem?.icon || "📝"}
+                      </span>
+                      <span className="item-name-small">{name}</span>
+                    </div>
+                    <div className="item-controls">
+                      {!isSaved && !isPredefined && (
+                        <button
+                          className="save-item-btn"
+                          onClick={() => handleSaveItem(name)}
+                          title="Save for later"
+                        >
+                          💾
+                        </button>
+                      )}
+                      <div className="quantity-controls">
+                        <button
+                          onClick={() => handleQuickItemChange(name, qty - 1)}
+                          className="qty-btn minus"
+                        >
+                          −
+                        </button>
+                        <span className="qty-display">{qty}</span>
+                        <button
+                          onClick={() => handleQuickItemChange(name, qty + 1)}
+                          className="qty-btn plus"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-request">
+              <p>Tap items above to build your request</p>
+            </div>
+          )}
+          
+          <button
+            className="send-request-btn"
+            onClick={() => sendOrder(quickRequestItems)}
+            disabled={
+              Object.keys(quickRequestItems).length === 0 || isSendDisabled
+            }
+          >
+            <span className="btn-icon">🚀</span>
+            <span className="btn-text">
+              {isSendDisabled ? `Wait ${cooldownTime}s` : "Send Request"}
+            </span>
+          </button>
+        </div>
+      </section>
+
+      {/* Custom Item Modal */}
       {isModalOpen && (
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <h3>Add Custom Item</h3>
-            <form onSubmit={handleAddCustomItem}>
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <h3 className="modal-title">Add Custom Item</h3>
+              <button
+                className="modal-close"
+                onClick={() => setIsModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleAddCustomItem} className="modal-form">
               <input
                 type="text"
                 value={customItemName}
                 onChange={(e) => setCustomItemName(e.target.value)}
-                placeholder="e.g., Bread, Milk..."
+                placeholder="Enter item name (e.g., Bread, Milk...)"
+                className="modal-input"
                 autoFocus
               />
               <div className="modal-actions">
-                <button type="button" onClick={() => setIsModalOpen(false)}>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="modal-btn cancel"
+                >
                   Cancel
                 </button>
-                <button type="submit">Add Item</button>
+                <button type="submit" className="modal-btn confirm">
+                  Add Item
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      <header className="app-header">
-        <h1>Send Request</h1>
-        <p>Send to: {user.partnerId?.displayName || "..."}</p>
-      </header>
-      {isSendDisabled && (
-        <div className="cooldown-banner">
-          Rate limit reached. Please wait {cooldownTime}s.
-        </div>
-      )}
-
-      {/* **NEW**: Scrollable status card container with loading state */}
-      <div className="status-card-section">
-        <h3 className="status-section-title">
-          Your Orders {sentOrders.length > 0 && `(${sentOrders.length})`}
-        </h3>
-        <div className="status-card-container">
-          {isLoadingOrders ? (
-            <div className="loading-orders">
-              <p>Loading your orders...</p>
-            </div>
-          ) : sentOrders.length > 0 ? (
-            sentOrders.map((ord) => (
-              <div
-                key={ord.tempId || ord._id}
-                className={`status-card ${ord.status}`}
-              >
-                <div className="status-card-header">
-                  <h4>
-                    {ord.status === "sending" && "Sending..."}
-                    {ord.status === "pending" && "Sent!"}
-                    {ord.status === "acknowledged" && "Seen ✅"}
-                    {ord.status === "rejected" &&
-                      `Rejected by ${user.partnerId?.displayName || "Receiver"} ❌`}
-                  </h4>
-                  <span className="order-time">
-                    {formatOrderTime(ord.createdAt)}
-                  </span>
-                </div>
-                
-                {ord.status !== "rejected" && (
-                  <ul className="sender-item-list">
-                    {Object.entries(ord.items).map(([name, qty]) => {
-                      const itemStatus = senderItemStatuses[`${ord._id}-${name}`];
-                      return (
-                        <li
-                          key={name}
-                          className={`sender-item ${itemStatus || ""}`}
-                        >
-                          <span className="sender-item-name">
-                            {MENU_ITEMS.find((i) => i.id == name)?.name || name} (x
-                            {qty})
-                          </span>
-                          <div className="sender-item-status">
-                            {itemStatus === "acknowledged" && (
-                              <span className="status-indicator acknowledged">
-                                ✓
-                              </span>
-                            )}
-                            {itemStatus === "rejected" && (
-                              <span className="status-indicator rejected">✗</span>
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                
-                {/* Individual item feedback log */}
-                {ord.itemFeedback && ord.itemFeedback.length > 0 && (
-                  <div className="item-feedback-log">
-                    {ord.itemFeedback.map((msg, index) => {
-                      const isAcknowledged = msg.includes("acknowledged");
-                      const isRejected = msg.includes("rejected");
-                      return (
-                        <p
-                          key={index}
-                          className={`feedback-message ${
-                            isAcknowledged ? "acknowledged-feedback" : ""
-                          } ${isRejected ? "rejected-feedback" : ""}`}
-                        >
-                          {msg}
-                        </p>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="no-orders">
-              <p>No pending orders. Send your first request below!</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Rest of the component remains the same */}
-      <div className="presets-section">
-        <h3>Your Presets</h3>
-        {user.presets?.length > 0 ? (
-          Object.keys(presetsByCategory).map((category) => (
-            <div key={category} className="preset-category">
-              <h5>{category}</h5>
-              <div className="preset-grid">
-                {presetsByCategory[category].map((preset) => (
-                  <div key={preset._id} className="preset-card">
-                    <span className="preset-name">{preset.name}</span>
-                    <div className="preset-card-actions">
-                      <button
-                        onClick={() => onEditPreset(preset._id)}
-                        className="preset-action-btn"
-                        disabled={isSendDisabled}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => sendOrder(preset.customItems)}
-                        className="preset-action-btn send"
-                        disabled={isSendDisabled}
-                      >
-                        Send
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="no-presets-text">
-            Click 'Manage Presets' to create your first one!  
-          </p>
-        )}
-      </div>
-
-      <div className="custom-order-section">
-        <h3>Quick Request</h3>
-        <div className="quick-request-builder">
-          <div className="available-items">
-            <div className="available-items-header">
-              <h4>Add an Item</h4>
-              <button
-                className="add-custom-item-btn"
-                onClick={() => setIsModalOpen(true)}
-              >
-                + Custom
-              </button>
-            </div>
-            <div className="item-grid">
-              {availableItems.map((item) => (
-                <div key={item.id} className="add-item-card-wrapper">
-                  <button
-                    className="add-item-card"
-                    onClick={() =>
-                      setQuickRequestItems((p) => ({
-                        ...p,
-                        [item.name]: (p[item.name] || 0) + 1,
-                      }))
-                    }
-                  >
-                    <span className="item-icon">{item.icon}</span>
-                    <span>{item.name}</span>
-                  </button>
-                  {item.isCustom && (
-                    <button
-                      className="delete-saved-item-btn"
-                      onClick={() => handleDeleteSavedItem(item.name)}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="current-request">
-            <h4>Current List</h4>
-            {Object.keys(quickRequestItems).length > 0 ? (
-              <div className="request-list">
-                {Object.entries(quickRequestItems).map(([name, qty]) => {
-                  const isSaved = user.customItems?.includes(name);
-                  const isPredefined = MENU_ITEMS.some((i) => i.name === name);
-                  return (
-                    <div key={name} className="menu-item quick-request-item">
-                      <span className="item-name">{name}</span>
-                      <div className="item-controls">
-                        {!isSaved && !isPredefined && (
-                          <button
-                            className="save-quick-item-btn"
-                            onClick={() => handleSaveItem(name)}
-                            title="Save for later"
-                          >
-                            +
-                          </button>
-                        )}
-                        <div className="quantity-selector">
-                          <button
-                            onClick={() => handleQuickItemChange(name, qty - 1)}
-                          >
-                            -
-                          </button>
-                          <span>{qty}</span>
-                          <button
-                            onClick={() => handleQuickItemChange(name, qty + 1)}
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="no-items-text">Click an item to add it.</p>
-            )}
-          </div>
-        </div>
-        <button
-          className="send-order-button"
-          onClick={() => sendOrder(quickRequestItems)}
-          disabled={
-            Object.keys(quickRequestItems).length === 0 || isSendDisabled
-          }
-        >
-          {isSendDisabled ? `Wait ${cooldownTime}s` : "Send Quick Request"}
-        </button>
-      </div>
-    </>
+    </div>
   );
 }
 
-// --- ReceiverView ---
-function ReceiverView() {
+// --- Enhanced Receiver View ---
+function EnhancedReceiverView({ showToast }) {
   const { user, token } = useContext(AuthContext);
-  const [activeOrder, setActiveOrder] = useState(null);
-  // --- STEP 1: State to track individual item statuses for UI feedback ---
-  // **MODIFIED**: State now holds an array of orders, not just one
   const [pendingOrders, setPendingOrders] = useState([]);
   const [itemStatuses, setItemStatuses] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
 
-  // **NEW**: Helper function to format timestamp
   const formatTimestamp = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -750,27 +893,28 @@ function ReceiverView() {
   };
 
   useEffect(() => {
-    // **MODIFIED**: Fetch initial list of pending orders
     async function fetchPendingOrders() {
       if (!token) return;
       try {
+        setIsLoading(true);
         const orders = await apiRequest("/api/pending-orders", { token });
         if (orders) setPendingOrders(orders);
       } catch (error) {
         console.error("Failed to fetch pending orders:", error);
+        showToast("Failed to load orders", "error");
+      } finally {
+        setIsLoading(false);
       }
     }
+    
     fetchPendingOrders();
 
-    // **MODIFIED**: Listen for the new event that sends the whole list
     const handleOrderListUpdated = (ordersData) => {
       setPendingOrders(ordersData);
-      // **FIXED**: Only reset item statuses for orders that are no longer in the list
       setItemStatuses((prev) => {
         const newStatuses = { ...prev };
         const currentOrderIds = ordersData.map((order) => order._id);
 
-        // Remove statuses for orders that are no longer pending
         Object.keys(newStatuses).forEach((key) => {
           const orderId = key.split("-")[0];
           if (!currentOrderIds.includes(orderId)) {
@@ -784,45 +928,38 @@ function ReceiverView() {
 
     socket.on("order_list_updated", handleOrderListUpdated);
     return () => socket.off("order_list_updated", handleOrderListUpdated);
-  }, [token]);
+  }, [token, showToast]);
 
-
-  // --- STEP 1 & 2: Handlers for individual item actions ---
   const handleItemAcknowledge = (orderId, itemName) => {
-    // **FIXED**: Use orderId parameter instead of activeOrder
     socket.emit("item_acknowledged", {
       orderId: orderId,
       itemName: itemName,
       receiverId: user._id,
     });
-    // Give instant visual feedback
     setItemStatuses((prev) => ({
       ...prev,
       [`${orderId}-${itemName}`]: "acknowledged",
     }));
+    showToast(`✅ Acknowledged ${itemName}`, "success");
   };
 
   const handleItemReject = (orderId, itemName) => {
-    // **FIXED**: Use orderId parameter instead of activeOrder
     socket.emit("item_rejected", {
       orderId: orderId,
       itemName: itemName,
       receiverId: user._id,
     });
-    // Give instant visual feedback
     setItemStatuses((prev) => ({
       ...prev,
       [`${orderId}-${itemName}`]: "rejected",
     }));
+    showToast(`❌ Rejected ${itemName}`, "error");
   };
 
-  // **MODIFIED**: Actions now need the specific orderId
   const handleAcknowledge = (orderId) => {
     if (orderId) {
       socket.emit("acknowledge_order", { orderId, receiverId: user._id });
-      // Optimistic update: remove the order from the list immediately
       setPendingOrders((prev) => prev.filter((o) => o._id !== orderId));
-      // **FIXED**: Clear item statuses for this order when acknowledging
       setItemStatuses((prev) => {
         const newStatuses = { ...prev };
         Object.keys(newStatuses).forEach((key) => {
@@ -832,15 +969,14 @@ function ReceiverView() {
         });
         return newStatuses;
       });
+      showToast("Order acknowledged!", "success");
     }
   };
 
   const handleReject = (orderId) => {
     if (orderId) {
       socket.emit("reject_order", { orderId, receiverId: user._id });
-      // Optimistic update
       setPendingOrders((prev) => prev.filter((o) => o._id !== orderId));
-      // **FIXED**: Clear item statuses for this order when rejecting
       setItemStatuses((prev) => {
         const newStatuses = { ...prev };
         Object.keys(newStatuses).forEach((key) => {
@@ -850,102 +986,160 @@ function ReceiverView() {
         });
         return newStatuses;
       });
+      showToast("Order rejected", "info");
     }
   };
 
-   return (
-    <>
-      <header className="app-header">
-        <h1>Incoming Requests</h1>
-        <p>From: {user.partnerId?.displayName || "..."}</p>
-      </header>
-      <div className="order-display">
-        {/* Check if there are any pending orders to display */}
-        {pendingOrders.length > 0 ? (
-          <div className="order-list-container">
-            {/* Create a card for each order in the pendingOrders array */}
+  return (
+    <div className="receiver-view">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-title-section">
+          <h1 className="page-title">Incoming Requests</h1>
+          <p className="page-subtitle">
+            From: <span className="partner-name">{user.partnerId?.displayName || "Loading..."}</span>
+          </p>
+        </div>
+        {pendingOrders.length > 0 && (
+          <div className="pending-indicator">
+            <div className="pending-count">{pendingOrders.length}</div>
+            <div className="pending-text">Pending</div>
+          </div>
+        )}
+      </div>
+
+      {/* Orders Display */}
+      <div className="receiver-orders-container">
+        {isLoading ? (
+          <div className="orders-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading requests...</p>
+          </div>
+        ) : pendingOrders.length > 0 ? (
+          <div className="receiver-orders-list">
             {pendingOrders.map((order) => (
-              <div key={order._id} className="order-card animate-fade-in">
-                <div className="order-timestamp">
-                  {/* **UPDATED**: New timestamp format */}
-                  Received: {formatTimestamp(order.createdAt)}
+              <div key={order._id} className="receiver-order-card">
+                <div className="order-header-receiver">
+                  <div className="order-info">
+                    <div className="order-pulse"></div>
+                    <span className="order-label">New Request</span>
+                  </div>
+                  <span className="order-timestamp-receiver">
+                    {formatTimestamp(order.createdAt)}
+                  </span>
                 </div>
 
-                {/* --- Item list with individual action buttons --- */}
-                <ul className="receiver-item-list">
+                <div className="receiver-items-list">
                   {Object.entries(order.items).map(([name, quantity]) => {
                     const itemStatus = itemStatuses[`${order._id}-${name}`];
+                    const menuItem = MENU_ITEMS.find(i => i.name === name);
+                    
                     return (
-                      <li
+                      <div
                         key={name}
-                        className={`receiver-item ${itemStatus || ""}`}
+                        className={`receiver-item-new ${itemStatus || ""}`}
                       >
-                        <span className="receiver-item-name">
-                          {name} (x{quantity})
-                        </span>
-                        <div className="receiver-item-actions">
-                          {/* **ENHANCED**: Only show buttons if item hasn't been acted upon */}
+                        <div className="item-details-receiver">
+                          <span className="item-icon-receiver">
+                            {menuItem?.icon || "📝"}
+                          </span>
+                          <div className="item-text">
+                            <span className="item-name-receiver">{name}</span>
+                            <span className="item-quantity-receiver">×{quantity}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="item-actions-receiver">
                           {!itemStatus && (
                             <>
                               <button
-                                onClick={() =>
-                                  handleItemReject(order._id, name)
-                                }
-                                className="item-action-btn reject"
+                                onClick={() => handleItemReject(order._id, name)}
+                                className="item-action-btn-new reject"
                               >
                                 ✗
                               </button>
                               <button
-                                onClick={() =>
-                                  handleItemAcknowledge(order._id, name)
-                                }
-                                className="item-action-btn acknowledge"
+                                onClick={() => handleItemAcknowledge(order._id, name)}
+                                className="item-action-btn-new acknowledge"
                               >
                                 ✓
                               </button>
                             </>
                           )}
-                          {/* **ENHANCED**: Show status indicator when item has been acted upon */}
                           {itemStatus === "acknowledged" && (
-                            <span className="status-indicator acknowledged">
-                              ✓
-                            </span>
+                            <div className="item-status-indicator acknowledged">✓</div>
                           )}
                           {itemStatus === "rejected" && (
-                            <span className="status-indicator rejected">✗</span>
+                            <div className="item-status-indicator rejected">✗</div>
                           )}
                         </div>
-                      </li>
+                      </div>
                     );
                   })}
-                </ul>
+                </div>
 
-                {/* Main actions for the entire order */}
-                <div className="order-actions">
+                <div className="order-actions-receiver">
                   <button
-                    className="reject-button"
+                    className="order-btn-new reject-all"
                     onClick={() => handleReject(order._id)}
                   >
-                    Reject All
+                    <span className="btn-icon">❌</span>
+                    <span className="btn-text">Reject All</span>
                   </button>
                   <button
-                    className="acknowledge-button"
+                    className="order-btn-new acknowledge-all"
                     onClick={() => handleAcknowledge(order._id)}
                   >
-                    Acknowledge All
+                    <span className="btn-icon">✅</span>
+                    <span className="btn-text">Accept All</span>
                   </button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          // Message to show when the order list is empty
-          <p className="waiting-text">Waiting for new requests...</p>
+          <div className="empty-receiver-state">
+            <div className="empty-icon-large">📱</div>
+            <h3>All Caught Up!</h3>
+            <p>No pending requests. You'll be notified when new ones arrive.</p>
+          </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
+// --- App Component ---
+function App() {
+  const { isLoggedIn, user, logout, authReady } = useContext(AuthContext);
+  const [publicPage, setPublicPage] = useState("home");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  if (!authReady) {
+    return <LoadingScreen />;
+  }
+  
+  if (isLoggedIn && isEditingProfile) {
+    return <EditProfilePage onBack={() => setIsEditingProfile(false)} />;
+  }
+  
+  if (isLoggedIn && user) {
+    return user.partnerId ? (
+      <MainApp
+        user={user}
+        onLogout={logout}
+        onEditProfile={() => setIsEditingProfile(true)}
+      />
+    ) : (
+      <ConnectPage />
+    );
+  }
+  
+  if (publicPage === "auth") {
+    return <AuthPage />;
+  }
+  
+  return <HomePage onGetStarted={() => setPublicPage("auth")} />;
+}
 
 export default App;
