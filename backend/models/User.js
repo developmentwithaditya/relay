@@ -105,7 +105,16 @@ const userSchema = new mongoose.Schema({
         'User can have a maximum of 20 saved custom items.'
     ],
     default: [],
+  },
+
+  // ===================================================================
+  //  ADD THIS FIELD TO YOUR SCHEMA
+  // ===================================================================
+  pushSubscription: {
+    type: Object
   }
+  // ===================================================================
+  
 });
 
 const User = mongoose.model('User', userSchema);

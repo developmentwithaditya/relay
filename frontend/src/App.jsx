@@ -81,6 +81,87 @@ function ToastNotification({ message, type = "info", isVisible, onClose }) {
   );
 }
 
+// --- Push Notification Helper Functions ---
+const urlBase64ToUint8Array = (base64String) => {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+};
+
+// This component will manage the push subscription logic
+function PushNotificationManager() {
+    const { token } = useContext(AuthContext);
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [subscriptionError, setSubscriptionError] = useState(null);
+
+    useEffect(() => {
+        if (!token || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+            console.warn('Push notifications are not supported in this browser.');
+            return;
+        }
+
+        const VAPID_PUBLIC_KEY = "BMs4c70rCMlB5wuPknfFhT3Q95lx6UMZ-iwy7g8CNvupFaCFTpl2RyzujGHyGENnWWyxOj4-1OC_yP9HiujwZzo"; // IMPORTANT: Replace with your actual VAPID Public Key
+
+        const subscribeUser = async () => {
+            try {
+                // Register the service worker
+                const swRegistration = await navigator.serviceWorker.register('/service-worker.js');
+                console.log('Service Worker registered:', swRegistration);
+
+                // Check for existing subscription
+                let subscription = await swRegistration.pushManager.getSubscription();
+                
+                if (subscription === null) {
+                    // No subscription exists, create a new one
+                    console.log('No subscription found, creating new one.');
+                    subscription = await swRegistration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+                    });
+                } else {
+                    console.log('Existing subscription found.');
+                }
+                
+                // Send the subscription to the backend
+                await apiRequest('/api/save-subscription', {
+                    method: 'POST',
+                    token,
+                    body: subscription,
+                });
+
+                console.log('Push subscription sent to server.');
+                setIsSubscribed(true);
+            } catch (error) {
+                console.error('Failed to subscribe the user: ', error);
+                setSubscriptionError(error.message);
+            }
+        };
+
+        // Ask for permission and subscribe
+        const requestNotificationPermission = async () => {
+            const permission = await window.Notification.requestPermission();
+            if (permission === 'granted') {
+                await subscribeUser();
+            } else {
+                console.warn('Notification permission was denied.');
+                setSubscriptionError('Permission denied.');
+            }
+        };
+
+        requestNotificationPermission();
+
+    }, [token]);
+
+    // This component doesn't render anything visible in the UI
+    return null; 
+}
+
+
 // --- MainApp Component (Completely Redesigned) ---
 function MainApp({ user, onLogout, onEditProfile }) {
   const { theme, toggleTheme } = useTheme();
@@ -147,15 +228,16 @@ function MainApp({ user, onLogout, onEditProfile }) {
 
   return (
     <div className="relay-app">
+      {/* [NEW] Add the PushNotificationManager to handle subscription */}
+      <PushNotificationManager />
+
       {/* Enhanced Header */}
       <header className="relay-header">
         <div className="header-container">
-          {/* Connection Status Indicator */}
+          {/* ... (rest of your header code is unchanged) ... */}
           <div className={`connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
             <div className="connection-dot"></div>
           </div>
-
-          {/* Profile Section */}
           <div className="profile-section-new">
             <div className="profile-avatar-container">
               <img
@@ -175,8 +257,6 @@ function MainApp({ user, onLogout, onEditProfile }) {
               <p className="profile-role">{view === 'sender' ? 'Sender' : 'Receiver'}</p>
             </div>
           </div>
-
-          {/* Header Actions */}
           <div className="header-actions-new">
             <button
               onClick={toggleTheme}
@@ -185,7 +265,6 @@ function MainApp({ user, onLogout, onEditProfile }) {
             >
               <span className="btn-icon">{theme === "light" ? "🌙" : "☀️"}</span>
             </button>
-            
             <button
               onClick={() => setShowOrderHistory(true)}
               className="header-btn history-btn"
@@ -193,7 +272,6 @@ function MainApp({ user, onLogout, onEditProfile }) {
             >
               <span className="btn-icon">📋</span>
             </button>
-            
             {view === "sender" && (
               <button
                 onClick={() =>
@@ -209,7 +287,6 @@ function MainApp({ user, onLogout, onEditProfile }) {
                 <span className="btn-text">Presets</span>
               </button>
             )}
-            
             <button 
               onClick={onEditProfile} 
               className="header-btn edit-btn"
@@ -217,7 +294,6 @@ function MainApp({ user, onLogout, onEditProfile }) {
               <span className="btn-icon">✏️</span>
               <span className="btn-text">Edit</span>
             </button>
-            
             <button 
               onClick={onLogout} 
               className="header-btn logout-btn"
