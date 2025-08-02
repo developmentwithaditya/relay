@@ -1,7 +1,5 @@
-// frontend/src/ConnectPage.jsx
 import React, { useState, useContext } from 'react';
 import { AuthContext } from './context/AuthContext';
-// Import our centralized apiRequest helper
 import apiRequest from './services/api';
 import './ConnectPage.css';
 
@@ -11,14 +9,16 @@ function ConnectPage() {
   const [searchResult, setSearchResult] = useState(null);
   const [searchError, setSearchError] = useState('');
   const [requestStatus, setRequestStatus] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     setSearchError('');
     setSearchResult(null);
     setRequestStatus('');
+    
     try {
-      // --- DEFINITIVE FIX: Use the apiRequest helper ---
       const data = await apiRequest(`/api/users/search?email=${searchEmail}`, { token });
       if (data) {
         setSearchResult(data);
@@ -27,36 +27,42 @@ function ConnectPage() {
       }
     } catch (err) {
       setSearchError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSendRequest = async (targetUserId) => {
+    setIsLoading(true);
     try {
-      // --- DEFINITIVE FIX: Use the apiRequest helper ---
       await apiRequest('/api/connect/request', {
         method: 'POST',
         token,
         body: { targetUserId }
       });
-      setRequestStatus('Connection request sent!');
+      setRequestStatus('Connection request sent successfully!');
       setSearchResult(null);
+      setSearchEmail('');
     } catch (err) {
       setRequestStatus(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
   
   const handleAcceptRequest = async (requesterId) => {
+    setIsLoading(true);
     try {
-      // --- DEFINITIVE FIX: Use the apiRequest helper ---
       await apiRequest('/api/connect/accept', {
         method: 'POST',
         token,
         body: { requesterId }
       });
-      // Refresh user data to get the new partner info and trigger a re-render
       refreshUserData();
     } catch (err) {
       alert(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -64,40 +70,77 @@ function ConnectPage() {
     <div className="connect-page-container">
       <div className="connect-wrapper">
         <header className="connect-header">
-          <h1>Connect with your Partner</h1>
-          <p>You need to link with your partner to start sending requests.</p>
+          <h1>Connect with Partner</h1>
+          <p>Link with your partner to start sharing location and sending requests seamlessly.</p>
         </header>
 
         {user?.pendingRequests && user.pendingRequests.length > 0 && (
           <div className="card pending-requests-card">
-            <h3>Incoming Requests</h3>
+            <h3>📨 Incoming Requests</h3>
             {user.pendingRequests.map(req => (
               <div key={req._id} className="request-item">
-                <span>{req.email} ({req.role}) wants to connect.</span>
-                <button className="accept-btn" onClick={() => handleAcceptRequest(req._id)}>Accept</button>
+                <div className="request-info">
+                  <div className="request-email">{req.email}</div>
+                  <span className="request-role">{req.role}</span>
+                </div>
+                <button 
+                  className={`accept-btn ${isLoading ? 'loading' : ''}`}
+                  onClick={() => handleAcceptRequest(req._id)}
+                  disabled={isLoading}
+                >
+                  Accept Request
+                </button>
               </div>
             ))}
           </div>
         )}
 
         <div className="card search-card">
-          <h3>Find your Partner by Email</h3>
-          <form onSubmit={handleSearch}>
+          <h3>🔍 Find Your Partner</h3>
+          <form onSubmit={handleSearch} className="search-form">
             <input
               type="email"
-              placeholder="partner@example.com"
+              className="search-input"
+              placeholder="Enter partner's email address"
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
               required
+              disabled={isLoading}
             />
-            <button type="submit">Search</button>
+            <button 
+              type="submit" 
+              className={`search-btn ${isLoading ? 'loading' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Searching...' : 'Search'}
+            </button>
           </form>
-          {searchError && <p className="error-text">{searchError}</p>}
-          {requestStatus && <p className="success-text">{requestStatus}</p>}
+          
+          {searchError && (
+            <div className="status-message error-text">
+              ❌ {searchError}
+            </div>
+          )}
+          
+          {requestStatus && (
+            <div className="status-message success-text">
+              ✅ {requestStatus}
+            </div>
+          )}
+          
           {searchResult && (
             <div className="search-result">
-              <p>Found: {searchResult.email} (Role: {searchResult.role})</p>
-              <button className="connect-btn" onClick={() => handleSendRequest(searchResult._id)}>Send Connect Request</button>
+              <div className="result-info">
+                <div className="result-email">{searchResult.email}</div>
+                <span className="result-role">{searchResult.role}</span>
+              </div>
+              <button 
+                className={`connect-btn ${isLoading ? 'loading' : ''}`}
+                onClick={() => handleSendRequest(searchResult._id)}
+                disabled={isLoading}
+              >
+                Send Request
+              </button>
             </div>
           )}
         </div>
