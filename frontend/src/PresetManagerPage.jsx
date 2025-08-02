@@ -313,14 +313,36 @@ function PresetManagerPage({ onBack, mode = 'add', presetId = null }) {
                             onChange={(e) => handleItemChange(index, 'name', e.target.value)}
                             required
                           />
-                          <input
-                            type="number"
-                            className="form-input quantity-input"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                            required
-                          />
+                          {/* === NEW RESPONSIVE QUANTITY CONTROLLER === */}
+                          <div className="quantity-control">
+                            <button
+                              type="button"
+                              className="quantity-btn minus"
+                              onClick={() => handleItemChange(index, 'quantity', item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                              aria-label="Decrease quantity"
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              className="form-input quantity-input"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                              required
+                              aria-label="Item quantity"
+                            />
+                            <button
+                              type="button"
+                              className="quantity-btn plus"
+                              onClick={() => handleItemChange(index, 'quantity', item.quantity + 1)}
+                              aria-label="Increase quantity"
+                            >
+                              +
+                            </button>
+                          </div>
+                          {/* ========================================= */}
                           <button
                             type="button"
                             className="remove-item-btn"

@@ -272,8 +272,10 @@
   margin-bottom: 1.5rem;
 }
 
+/* --- MODIFIED FOR RESPONSIVENESS --- */
 .item-row {
   display: grid;
+  /* Grid layout for item name, quantity controls, and remove button */
   grid-template-columns: 1fr auto auto;
   gap: 1rem;
   align-items: center;
@@ -293,10 +295,56 @@
   margin: 0;
 }
 
-.quantity-input {
-  width: 80px !important;
-  text-align: center;
+/* --- NEW QUANTITY CONTROLLER STYLES --- */
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
+
+.quantity-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--preset-border);
+  background-color: var(--preset-bg-primary);
+  color: var(--preset-text-secondary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: var(--preset-transition);
+}
+
+.quantity-btn:hover:not(:disabled) {
+  border-color: var(--preset-primary);
+  color: var(--preset-primary);
+  transform: scale(1.05);
+}
+
+.quantity-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantity-input {
+  width: 60px !important;
+  text-align: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  /* Hide the default number input arrows */
+  -moz-appearance: textfield;
+}
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* --- END NEW STYLES --- */
+
 
 .remove-item-btn {
   width: 40px;
@@ -460,12 +508,6 @@
   background: var(--preset-primary-light);
 }
 
-.btn-success {
-  background: linear-gradient(135deg, var(--preset-success), #059669);
-  color: var(--preset-text-inverse);
-  border: none;
-}
-
 .btn-danger {
   background: linear-gradient(135deg, var(--preset-danger), #dc2626);
   color: var(--preset-text-inverse);
@@ -598,14 +640,17 @@
     border-radius: 16px;
   }
   
+  /* --- MODIFIED FOR RESPONSIVENESS --- */
   .item-row {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
+    grid-template-columns: 1fr auto; /* Name | Remove Button */
+    row-gap: 0.75rem;
   }
-  
-  .quantity-input {
-    width: 100% !important;
+
+  .item-row .quantity-control {
+    grid-column: 1 / -1; /* Make quantity control span full width */
+    justify-content: center; /* Center the buttons and input */
   }
+  /* --- END MODIFICATION --- */
   
   .form-actions {
     flex-direction: column;
@@ -624,6 +669,10 @@
     top: auto;
     right: auto;
     margin-bottom: 2rem;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
   }
 }
 
