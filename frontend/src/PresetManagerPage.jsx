@@ -1,229 +1,482 @@
-// frontend/src/PresetManagerPage.jsx
-import React from 'react';
-import { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { AuthContext } from './context/AuthContext';
 import apiRequest from './services/api';
 import './PresetManagerPage.css';
 
-// Component receives props to determine its mode ('add' or 'edit') and which preset to edit
 function PresetManagerPage({ onBack, mode = 'add', presetId = null }) {
   const { user, token, refreshUserData } = useContext(AuthContext);
 
-  // State to track if we are in 'edit' mode
+  // Core state
   const [isEditing, setIsEditing] = useState(mode === 'edit');
-  // State to hold the original preset data while editing
   const [editingPreset, setEditingPreset] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // Form state
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [presetName, setPresetName] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [customItems, setCustomItems] = useState([{ name: '', quantity: 1 }]);
-  
-  // UI feedback state
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [formData, setFormData] = useState({
+    presetName: '',
+    selectedCategory: '',
+    customItems: [{ name: '', quantity: 1 }],
+    newCategoryName: ''
+  });
 
-  // This effect runs when the component loads or when the mode changes.
-  // If in 'edit' mode, it finds the correct preset and populates the form fields.
+  // UI feedback state
+  const [notifications, setNotifications] = useState([]);
+
+  // Initialize form data
   useEffect(() => {
     if (mode === 'edit' && presetId) {
-      const presetToEdit = user.presets.find(p => p._id === presetId);
+      const presetToEdit = user.presets?.find(p => p._id === presetId);
       if (presetToEdit) {
         setIsEditing(true);
         setEditingPreset(presetToEdit);
-        setPresetName(presetToEdit.name);
-        setSelectedCategory(presetToEdit.category);
-        setCustomItems(presetToEdit.customItems);
+        setFormData(prev => ({
+          ...prev,
+          presetName: presetToEdit.name,
+          selectedCategory: presetToEdit.category,
+          customItems: presetToEdit.customItems
+        }));
       }
     } else {
-      // If in 'add' mode, set the category to the first one available by default.
-      setSelectedCategory(user.categories[0] || '');
+      setFormData(prev => ({
+        ...prev,
+        selectedCategory: user.categories?.[0] || ''
+      }));
     }
   }, [mode, presetId, user.presets, user.categories]);
 
-  // Resets the form to its initial state, used after adding a preset or canceling an edit.
-  const resetForm = () => {
-    setPresetName('');
-    setCustomItems([{ name: '', quantity: 1 }]);
-    setSelectedCategory(user.categories[0] || '');
+  // Notification system
+  const addNotification = useCallback((message, type = 'success') => {
+    const id = Date.now();
+    const notification = { id, message, type };
+    setNotifications(prev => [...prev, notification]);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  }, []);
+
+  const removeNotification = useCallback((id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  // Form handlers
+  const updateFormData = useCallback((field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleItemChange = useCallback((index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      customItems: prev.customItems.map((item, i) => 
+        i === index 
+          ? { ...item, [field]: field === 'quantity' ? Math.max(1, parseInt(value) || 1) : value }
+          : item
+      )
+    }));
+  }, []);
+
+  const addItemField = useCallback(() => {
+    if (formData.customItems.length < 5) {
+      setFormData(prev => ({
+        ...prev,
+        customItems: [...prev.customItems, { name: '', quantity: 1 }]
+      }));
+    }
+  }, [formData.customItems.length]);
+
+  const removeItemField = useCallback((index) => {
+    if (formData.customItems.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        customItems: prev.customItems.filter((_, i) => i !== index)
+      }));
+    }
+  }, [formData.customItems.length]);
+
+  const resetForm = useCallback(() => {
+    setFormData({
+      presetName: '',
+      selectedCategory: user.categories?.[0] || '',
+      customItems: [{ name: '', quantity: 1 }],
+      newCategoryName: ''
+    });
     setIsEditing(false);
     setEditingPreset(null);
-    setMessage('');
-    setError('');
-  };
+  }, [user.categories]);
 
-  // Handlers for the dynamic custom items form
-  const handleItemChange = (index, field, value) => {
-    const newItems = [...customItems];
-    newItems[index][field] = field === 'quantity' ? parseInt(value, 10) || 1 : value;
-    setCustomItems(newItems);
-  };
-  const addItemField = () => {
-    if (customItems.length < 5) {
-      setCustomItems([...customItems, { name: '', quantity: 1 }]);
-    }
-  };
-  const removeItemField = (index) => {
-    if (customItems.length > 1) {
-      setCustomItems(customItems.filter((_, i) => i !== index));
-    }
-  };
-
-  // API call handlers
+  // API handlers
   const handleAddCategory = async (e) => {
     e.preventDefault();
-    if (!newCategoryName) return;
+    if (!formData.newCategoryName.trim()) return;
+    
+    setLoading(true);
     try {
-      await apiRequest('/api/categories', { method: 'POST', token, body: { name: newCategoryName } });
-      setMessage(`Category "${newCategoryName}" added!`);
+      await apiRequest('/api/categories', { 
+        method: 'POST', 
+        token, 
+        body: { name: formData.newCategoryName.trim() } 
+      });
+      addNotification(`Category "${formData.newCategoryName}" added successfully!`);
       await refreshUserData();
-      setNewCategoryName('');
-    } catch (err) { setError(err.message); }
+      updateFormData('newCategoryName', '');
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeleteCategory = async (categoryName) => {
     if (!window.confirm(`Delete category "${categoryName}" and all its presets?`)) return;
+    
+    setLoading(true);
     try {
-      await apiRequest(`/api/categories/${encodeURIComponent(categoryName)}`, { method: 'DELETE', token });
-      setMessage(`Category "${categoryName}" deleted.`);
+      await apiRequest(`/api/categories/${encodeURIComponent(categoryName)}`, { 
+        method: 'DELETE', 
+        token 
+      });
+      addNotification(`Category "${categoryName}" deleted successfully!`);
       await refreshUserData();
-    } catch (err) { setError(err.message); }
-  };
-  
-  const handleDeletePreset = async (id, name) => {
-    if (!window.confirm(`Delete preset "${name}"?`)) return;
-    try {
-      await apiRequest(`/api/presets/${id}`, { method: 'DELETE', token });
-      setMessage(`Preset "${name}" deleted.`);
-      await refreshUserData();
-    } catch (err) { setError(err.message); }
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Main handler for submitting the preset form (handles both Add and Edit)
+  const handleDeletePreset = async (id, name) => {
+    if (!window.confirm(`Delete preset "${name}"?`)) return;
+    
+    setLoading(true);
+    try {
+      await apiRequest(`/api/presets/${id}`, { method: 'DELETE', token });
+      addNotification(`Preset "${name}" deleted successfully!`);
+      await refreshUserData();
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmitPreset = async (e) => {
     e.preventDefault();
-    setError('');
-    setMessage('');
-    const finalItems = customItems.filter(item => item.name.trim() !== '' && item.quantity > 0);
-    if (!presetName || !selectedCategory || finalItems.length === 0) {
-      setError('A preset requires a name, category, and at least one item.');
+    
+    const validItems = formData.customItems.filter(item => 
+      item.name.trim() !== '' && item.quantity > 0
+    );
+
+    if (!formData.presetName.trim() || !formData.selectedCategory || validItems.length === 0) {
+      addNotification('Please fill in all required fields and add at least one item.', 'error');
       return;
     }
 
-    const payload = { name: presetName, customItems: finalItems, category: selectedCategory };
+    const payload = {
+      name: formData.presetName.trim(),
+      customItems: validItems,
+      category: formData.selectedCategory
+    };
 
+    setLoading(true);
     try {
       if (isEditing) {
-        await apiRequest(`/api/presets/${editingPreset._id}`, { method: 'PATCH', token, body: payload });
-        setMessage(`Preset "${presetName}" updated successfully!`);
+        await apiRequest(`/api/presets/${editingPreset._id}`, { 
+          method: 'PATCH', 
+          token, 
+          body: payload 
+        });
+        addNotification(`Preset "${payload.name}" updated successfully!`);
         await refreshUserData();
-        onBack(); // Go back to the main app after a successful edit
+        onBack();
       } else {
-        await apiRequest('/api/presets', { method: 'POST', token, body: payload });
-        setMessage(`Preset "${presetName}" saved successfully!`);
+        await apiRequest('/api/presets', { 
+          method: 'POST', 
+          token, 
+          body: payload 
+        });
+        addNotification(`Preset "${payload.name}" created successfully!`);
         await refreshUserData();
         resetForm();
       }
     } catch (err) {
-      setError(err.message);
+      addNotification(err.message, 'error');
+    } finally {
+      setLoading(false);
     }
   };
-  
-  // Function to switch a preset into editing mode within this page
+
   const startEditing = (preset) => {
     setIsEditing(true);
     setEditingPreset(preset);
-    setPresetName(preset.name);
-    setSelectedCategory(preset.category);
-    setCustomItems(preset.customItems);
-    window.scrollTo(0, 0); // Scroll to the top to see the form
+    setFormData(prev => ({
+      ...prev,
+      presetName: preset.name,
+      selectedCategory: preset.category,
+      customItems: preset.customItems
+    }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEditing = () => {
+    resetForm();
+    if (mode === 'edit') {
+      onBack();
+    }
   };
 
   return (
     <div className="preset-manager-container">
+      {/* Status Messages */}
+      <div className="status-messages">
+        {notifications.map(notification => (
+          <div 
+            key={notification.id} 
+            className={`status-message ${notification.type}`}
+            onClick={() => removeNotification(notification.id)}
+          >
+            <span>
+              {notification.type === 'error' ? '⚠️' : '✅'}
+            </span>
+            {notification.message}
+          </div>
+        ))}
+      </div>
+
       <div className="preset-manager-wrapper">
-        <button onClick={onBack} className="back-button">← Back to App</button>
-        <h2>{isEditing ? 'Edit Preset' : 'Manage Your Presets'}</h2>
-
-        {error && <p className="error-message">{error}</p>}
-        {message && <p className="success-message">{message}</p>}
-
-        <div className="card">
-          <h3>{isEditing ? `Editing: ${editingPreset?.name}` : `Add New Preset (${user.presets?.length || 0}/10)`}</h3>
-          {user.categories?.length > 0 ? (
-             (user.presets?.length < 10 || isEditing) ? (
-            <form onSubmit={handleSubmitPreset}>
-              <div className="input-group">
-                <label>Preset Name</label>
-                <input type="text" value={presetName} onChange={(e) => setPresetName(e.target.value)} required />
-              </div>
-              <div className="input-group">
-                <label>Category</label>
-                <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} required>
-                  {user.categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                </select>
-              </div>
-              <div className="input-group">
-                <label>Items (up to 5)</label>
-                <div className="custom-item-form-list">
-                  {customItems.map((item, index) => (
-                    <div key={index} className="custom-item-form-row">
-                      <input type="text" placeholder="Item Name" value={item.name} onChange={(e) => handleItemChange(index, 'name', e.target.value)} required />
-                      <input type="number" min="1" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', e.target.value)} required />
-                      <button type="button" className="remove-item-btn" onClick={() => removeItemField(index)} disabled={customItems.length <= 1}>×</button>
-                    </div>
-                  ))}
-                </div>
-                {customItems.length < 5 && <button type="button" className="add-item-btn" onClick={addItemField}>+ Add Item</button>}
-              </div>
-              <div className="form-actions">
-                {isEditing && <button type="button" onClick={onBack} className="cancel-button">Cancel</button>}
-                <button type="submit" className="save-button">{isEditing ? 'Save Changes' : 'Save New Preset'}</button>
-              </div>
-            </form>
-             ) : <p>You have reached the maximum of 10 presets.</p>
-          ) : <p>You must create a category before you can add a preset.</p>}
+        {/* Header */}
+        <div className="preset-header">
+          <button onClick={onBack} className="back-button">
+            <span>←</span>
+            Back to App
+          </button>
+          <h1 className="preset-title">
+            {isEditing ? 'Edit Preset' : 'Preset Manager'}
+          </h1>
         </div>
 
+        {/* Main Form Card */}
+        <div className={`preset-card ${loading ? 'loading' : ''}`}>
+          <div className="preset-card-header">
+            <h2 className="preset-card-title">
+              <span>📝</span>
+              {isEditing ? `Editing: ${editingPreset?.name}` : 'Create New Preset'}
+            </h2>
+            <div className="preset-card-badge">
+              {user.presets?.length || 0}/10
+            </div>
+          </div>
+
+          {user.categories?.length > 0 ? (
+            (user.presets?.length < 10 || isEditing) ? (
+              <form onSubmit={handleSubmitPreset} className="preset-form">
+                {/* Preset Name */}
+                <div className="form-group">
+                  <label className="form-label">Preset Name *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.presetName}
+                    onChange={(e) => updateFormData('presetName', e.target.value)}
+                    placeholder="Enter a memorable name for your preset..."
+                    required
+                  />
+                </div>
+
+                {/* Category Selection */}
+                <div className="form-group">
+                  <label className="form-label">Category *</label>
+                  <select
+                    className="form-select"
+                    value={formData.selectedCategory}
+                    onChange={(e) => updateFormData('selectedCategory', e.target.value)}
+                    required
+                  >
+                    {user.categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Items */}
+                <div className="form-group">
+                  <label className="form-label">Items * (up to 5)</label>
+                  <div className="items-container">
+                    <div className="items-list">
+                      {formData.customItems.map((item, index) => (
+                        <div key={index} className="item-row">
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="Item name..."
+                            value={item.name}
+                            onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                            required
+                          />
+                          <input
+                            type="number"
+                            className="form-input quantity-input"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                            required
+                          />
+                          <button
+                            type="button"
+                            className="remove-item-btn"
+                            onClick={() => removeItemField(index)}
+                            disabled={formData.customItems.length <= 1}
+                            title="Remove item"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {formData.customItems.length < 5 && (
+                      <button
+                        type="button"
+                        className="add-item-btn"
+                        onClick={addItemField}
+                      >
+                        <span>+</span>
+                        Add Another Item
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  {isEditing && (
+                    <button type="button" onClick={cancelEditing} className="btn btn-secondary">
+                      Cancel
+                    </button>
+                  )}
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? 'Saving...' : isEditing ? '💾 Save Changes' : '✨ Create Preset'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-state-icon">📦</div>
+                <h3 className="empty-state-title">Maximum Presets Reached</h3>
+                <p className="empty-state-description">
+                  You've reached the maximum of 10 presets. Delete some existing presets to create new ones.
+                </p>
+              </div>
+            )
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">📂</div>
+              <h3 className="empty-state-title">No Categories Found</h3>
+              <p className="empty-state-description">
+                Create a category first before adding presets.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Category Management */}
         {!isEditing && (
-          <div className="card">
-            <h3>Categories ({user.categories?.length || 0}/5)</h3>
-            <div className="category-list">
+          <div className="preset-card">
+            <div className="preset-card-header">
+              <h2 className="preset-card-title">
+                <span>🏷️</span>
+                Categories
+              </h2>
+              <div className="preset-card-badge">
+                {user.categories?.length || 0}/5
+              </div>
+            </div>
+
+            <div className="categories-grid">
               {user.categories?.map(cat => (
-                <div key={cat} className="category-tag">{cat}<button onClick={() => handleDeleteCategory(cat)} className="delete-tag-btn">×</button></div>
+                <div key={cat} className="category-chip">
+                  {cat}
+                  <button
+                    onClick={() => handleDeleteCategory(cat)}
+                    className="delete-btn"
+                    title={`Delete ${cat}`}
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
+
             {user.categories?.length < 5 && (
-              <form onSubmit={handleAddCategory} className="add-form">
-                <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="New category name..." />
-                <button type="submit">Add</button>
+              <form onSubmit={handleAddCategory} className="category-form">
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.newCategoryName}
+                  onChange={(e) => updateFormData('newCategoryName', e.target.value)}
+                  placeholder="New category name..."
+                />
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  Add Category
+                </button>
               </form>
             )}
           </div>
         )}
-        
-        <div className="card">
-            <h3>Your Saved Presets</h3>
-            <div className="preset-list">
-                {user.presets?.length > 0 ? (
-                    user.presets.map(preset => (
-                        <div key={preset._id} className="preset-item">
-                            <div className="preset-item-header">
-                                <strong>{preset.name}</strong>
-                                <span className="preset-item-category">{preset.category}</span>
-                            </div>
-                            <ul className="preset-item-list">
-                                {preset.customItems.map((item, index) => <li key={index}>{item.name} (x{item.quantity})</li>)}
-                            </ul>
-                            <div className="preset-item-actions">
-                                <button onClick={() => handleDeletePreset(preset._id, preset.name)} className="delete-preset-btn">Delete</button>
-                                <button onClick={() => startEditing(preset)} className="edit-preset-btn">Edit</button>
-                            </div>
-                        </div>
-                    ))
-                ) : <p>No presets saved yet.</p>}
+
+        {/* Presets List */}
+        <div className="preset-card">
+          <div className="preset-card-header">
+            <h2 className="preset-card-title">
+              <span>📋</span>
+              Your Presets
+            </h2>
+          </div>
+
+          {user.presets?.length > 0 ? (
+            <div className="presets-grid">
+              {user.presets.map(preset => (
+                <div key={preset._id} className="preset-item">
+                  <div className="preset-item-header">
+                    <h3 className="preset-item-title">{preset.name}</h3>
+                    <span className="preset-item-category">{preset.category}</span>
+                  </div>
+                  
+                  <ul className="preset-items-list">
+                    {preset.customItems.map((item, index) => (
+                      <li key={index}>
+                        <span>{item.name}</span>
+                        <span>×{item.quantity}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <div className="preset-item-actions">
+                    <button
+                      onClick={() => startEditing(preset)}
+                      className="btn btn-secondary"
+                      disabled={loading}
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeletePreset(preset._id, preset.name)}
+                      className="btn btn-danger"
+                      disabled={loading}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">📝</div>
+              <h3 className="empty-state-title">No Presets Yet</h3>
+              <p className="empty-state-description">
+                Create your first preset to get started with quick order management.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
