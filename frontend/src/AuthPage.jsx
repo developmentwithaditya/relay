@@ -3,7 +3,8 @@ import { AuthContext } from './context/AuthContext';
 import apiRequest from './services/api';
 import './AuthPage.css';
 
-function AuthPage() {
+// Accept the onBackToHome prop
+function AuthPage({ onBackToHome }) {
   const [isLoginView, setIsLoginView] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,6 +88,18 @@ function AuthPage() {
       </div>
       
       <div className="auth-card">
+        {/* Add the Back Button here */}
+        <button 
+          onClick={onBackToHome} 
+          className="back-to-home-btn" 
+          aria-label="Go back to Home Page"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 19L5 12L12 5" />
+          </svg>
+          <span className="back-btn-text">Home</span>
+        </button>
+
         <div className="auth-header">
           <div className="auth-logo">
             <div className="logo-icon">
@@ -108,6 +121,7 @@ function AuthPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
+          {/* ... (rest of the form remains the same) ... */}
           {!isLoginView && (
             <>
               <div className="form-group">

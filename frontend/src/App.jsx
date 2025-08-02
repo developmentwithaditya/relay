@@ -1269,7 +1269,8 @@ function App() {
   }
   
   if (publicPage === "auth") {
-    return <AuthPage />;
+    // Pass a function to AuthPage to switch the view back to "home"
+    return <AuthPage onBackToHome={() => setPublicPage("home")} />;
   }
   
   return <HomePage onGetStarted={() => setPublicPage("auth")} />;

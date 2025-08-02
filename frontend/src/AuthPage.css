@@ -631,3 +631,51 @@
     transform: none;
   }
 }
+/* =================================== */
+/* ==== Back to Home Button Styles === */
+/* =================================== */
+
+.back-to-home-btn {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.5);
+  color: #4b5563;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px; /* pill shape */
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  z-index: 2;
+  backdrop-filter: blur(5px);
+}
+
+.back-to-home-btn:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1f2937;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+}
+
+.back-to-home-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Responsive styles for the back button */
+@media (max-width: 480px) {
+  .back-to-home-btn {
+    padding: 0.6rem; /* Make it a circle */
+    left: 1rem;
+    top: 1rem;
+  }
+
+  .back-to-home-btn .back-btn-text {
+    display: none; /* Hide text on small screens */
+  }
+}
