@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo, useRef } from "react";
+import React, { useState, useEffect, useContext, useMemo, useRef, useCallback } from "react";
 import { AuthContext } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
 import apiRequest, { socket } from "./services/api";
@@ -930,6 +930,40 @@ function EnhancedReceiverView({ showToast }) {
     return () => socket.off("order_list_updated", handleOrderListUpdated);
   }, [token, showToast]);
 
+  const handleAcknowledge = useCallback((orderId) => {
+    if (orderId) {
+      socket.emit("acknowledge_order", { orderId, receiverId: user._id });
+      setPendingOrders((prev) => prev.filter((o) => o._id !== orderId));
+      setItemStatuses((prev) => {
+        const newStatuses = { ...prev };
+        Object.keys(newStatuses).forEach((key) => {
+          if (key.startsWith(`${orderId}-`)) {
+            delete newStatuses[key];
+          }
+        });
+        return newStatuses;
+      });
+      showToast("Order acknowledged!", "success");
+    }
+  }, [user?._id, showToast]);
+
+  const handleReject = useCallback((orderId) => {
+    if (orderId) {
+      socket.emit("reject_order", { orderId, receiverId: user._id });
+      setPendingOrders((prev) => prev.filter((o) => o._id !== orderId));
+      setItemStatuses((prev) => {
+        const newStatuses = { ...prev };
+        Object.keys(newStatuses).forEach((key) => {
+          if (key.startsWith(`${orderId}-`)) {
+            delete newStatuses[key];
+          }
+        });
+        return newStatuses;
+      });
+      showToast("Order rejected", "info");
+    }
+  }, [user?._id, showToast]);
+
   const handleItemAcknowledge = (orderId, itemName) => {
     socket.emit("item_acknowledged", {
       orderId: orderId,
@@ -956,39 +990,22 @@ function EnhancedReceiverView({ showToast }) {
     showToast(`❌ Rejected ${itemName}`, "error");
   };
 
-  const handleAcknowledge = (orderId) => {
-    if (orderId) {
-      socket.emit("acknowledge_order", { orderId, receiverId: user._id });
-      setPendingOrders((prev) => prev.filter((o) => o._id !== orderId));
-      setItemStatuses((prev) => {
-        const newStatuses = { ...prev };
-        Object.keys(newStatuses).forEach((key) => {
-          if (key.startsWith(`${orderId}-`)) {
-            delete newStatuses[key];
-          }
-        });
-        return newStatuses;
-      });
-      showToast("Order acknowledged!", "success");
-    }
-  };
+  // Auto-process order when all items are actioned
+  useEffect(() => {
+    pendingOrders.forEach(order => {
+      const orderItems = Object.keys(order.items);
+      const actionedItems = orderItems.filter(itemName => !!itemStatuses[`${order._id}-${itemName}`]);
 
-  const handleReject = (orderId) => {
-    if (orderId) {
-      socket.emit("reject_order", { orderId, receiverId: user._id });
-      setPendingOrders((prev) => prev.filter((o) => o._id !== orderId));
-      setItemStatuses((prev) => {
-        const newStatuses = { ...prev };
-        Object.keys(newStatuses).forEach((key) => {
-          if (key.startsWith(`${orderId}-`)) {
-            delete newStatuses[key];
-          }
-        });
-        return newStatuses;
-      });
-      showToast("Order rejected", "info");
-    }
-  };
+      if (orderItems.length > 0 && actionedItems.length === orderItems.length) {
+        const hasRejection = actionedItems.some(itemName => itemStatuses[`${order._id}-${itemName}`] === 'rejected');
+        
+        setTimeout(() => {
+          if (hasRejection) handleReject(order._id);
+          else handleAcknowledge(order._id);
+        }, 500); // Delay for better UX
+      }
+    });
+  }, [pendingOrders, itemStatuses, handleAcknowledge, handleReject]);
 
   return (
     <div className="receiver-view">
@@ -1108,7 +1125,6 @@ function EnhancedReceiverView({ showToast }) {
     </div>
   );
 }
-
 // --- App Component ---
 function App() {
   const { isLoggedIn, user, logout, authReady } = useContext(AuthContext);
