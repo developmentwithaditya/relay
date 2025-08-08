@@ -742,7 +742,7 @@ body {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--duration-normal) var(--ease-out);
-  pointer-events: auto !important; /* Allow clicks to close */
+ /* pointer-events: auto !important;  Allow clicks to close */
 }
 
 .menu-overlay.open {
